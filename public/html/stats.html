@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Stats</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="navbar">
+    <a href="/">Home</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/about">About Project</a>
+    <a href="/local/about">About Station</a>
+    <div class="dropdown">
+      <button class="dropbtn">☰</button>
+      <div class="dropdown-content">
+       <a href="/local/satdump">Satdump</a>
+       <a class="active" href="/local/stats">System</a>
+       <a href="/login">Log In</a>
+       <a href="/local/admin">Admin Panel</a>
+      </div>
+    </div>
+  </div>
+  </div>
+    <div id="stats-container">
+        <div id="left-panel">
+            <div id="system-stats">
+                <h2>System Stats</h2>
+                <!-- populated by JS -->
+            </div>
+            <div id="pinned-stats">
+                <h2>Pinned</h2>
+                <ul id="pinned-list">
+                    <!-- populated by JS -->
+                </ul>
+            </div>
+        </div>
+        <div id="right-panel">
+            <h2>All Stats
+              <div id="search-controls"> 
+                <input type="text" id="hm-search-box" placeholder="Search sensors...">
+                <button id="refresh-pins">🔄 Refresh Values</button>
+            </div>
+            </h2>
+            <div id="hm-stats-container">
+                <!-- populated by JS -->
+            </div>
+        </div>
+    </div>
+    <script src="/js/stats.js"></script>
+</body>
+</html>
