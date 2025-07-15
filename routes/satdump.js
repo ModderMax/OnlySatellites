@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const os = require('os');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 
 function getHostIPv4() {
   const nets = os.networkInterfaces();
@@ -57,6 +57,16 @@ router.get('/live', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch live data' });
+  }
+});
+
+router.get('/html', async (req, res) => {
+  try {
+    const statusHtml = await fetch(`http://${hostIP}:8081/status`).then(r => r.text());
+    res.send(statusHtml);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to fetch status fragment');
   }
 });
 

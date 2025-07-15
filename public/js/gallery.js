@@ -26,6 +26,7 @@ document.getElementById('sortByPass')?.addEventListener('change', () => {
   loadImages();
 });
 document.getElementById('satelliteFilter')?.addEventListener('change', updateCompositeOptions);
+document.getElementById('satelliteFilter')?.addEventListener('change', loadImages);
 document.getElementById('bandFilter')?.addEventListener('change', loadImages);
 document.getElementById('correctedOnly')?.addEventListener('change', loadImages);
 document.getElementById('showUnfilled')?.addEventListener('change', loadImages);

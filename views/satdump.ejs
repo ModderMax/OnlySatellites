@@ -2,8 +2,10 @@
 <html>
 <head>
   <title>SatDump Monitor</title>
-  <script src="/vendor/chart/chart.esm.js"></script>
-  <script src="/vendor/chart-plugin/chartjs-plugin-streaming.esm.js"></script>
+  <script src="/vendor/luxon/global/luxon.min.js"></script>
+  <script src="/vendor/chart/chart.min.js"></script>
+  <script src="/vendor/chart-adapter/chartjs-adapter-luxon.umd.min.js"></script>
+  <script src="/vendor/chart-plugin/chartjs-plugin-streaming.min.js"></script>
   <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
@@ -27,6 +29,17 @@
 
   <script>
     const ctx = document.getElementById('snrChart').getContext('2d');
+
+    async function updateStatusHtml() {
+    try {
+      const res = await fetch('/local/satdump/html');
+      if (!res.ok) throw new Error('Failed to fetch status HTML');
+      const html = await res.text();
+      document.getElementById('status-container').innerHTML = html;
+    } catch (err) {
+      console.error('Error updating status HTML:', err);
+    }
+  }
 
     const snrChart = new Chart(ctx, {
       type: 'line',
@@ -53,7 +66,7 @@
               delay: 2000,
               onRefresh: async chart => {
                 try {
-                  const res = await fetch('/satdump/live');
+                  const res = await fetch('/local/satdump/live');
                   const data = await res.json();
                   const snr = data?.live_pipeline?.psk_demod?.snr ?? null;
                   if (snr !== null) {
@@ -77,6 +90,7 @@
         }
       }
     });
+    setInterval(updateStatusHtml, 5000); 
   </script>
 </body>
 </html>

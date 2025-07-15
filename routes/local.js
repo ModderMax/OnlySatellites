@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const os = require('os');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 
 function getHostIPv4() {
   const nets = os.networkInterfaces();
