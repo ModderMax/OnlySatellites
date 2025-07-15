@@ -6,6 +6,7 @@ const schedule = require('node-schedule');
 
 const apiRoutes = require('./routes/api');
 const statsHandler = require('./routes/stats');
+const gallery = require('./routes/gallery');
 const satdump = require('./routes/satdump');
 const satdumpImages = require('./routes/local');
 const updateRoute = require('./routes/update');
@@ -25,7 +26,7 @@ var exePath = path.join(__dirname, 'db-update.exe');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-console.log("Server starting, please wait... \n this may take a few minutes on the first run.")
+console.log("Server starting, please wait... \nthis may take a few minutes on the first run.")
 
 var result = spawnSync(exePath, ['update'], {
   stdio: 'inherit',
@@ -54,7 +55,7 @@ if (result.error) {
 // Middleware
 app.use(express.json());
 app.use(session({
-  secret: '1278fafazxuohuazchiao72fi01927t28t98427goawbvas7vd7aw7egvxcbjae7921',
+  secret: '1278fafazxuas8fehuaso72fi01927t28t98427goawbvas7vd7aw7egvxcbjae7921',
   resave: false,
   saveUninitialized: false,
   cookie: { httpOnly: true }
@@ -93,12 +94,13 @@ app.get('/api/stats', requireAuth(3), statsHandler(appStartTime));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/html/index.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public/html/about.html')));
 app.get('/local', (req, res) => res.sendFile(path.join(__dirname, 'public/html/local.html')));
-app.get('/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public/html/gallery.html')));
+app.use('/gallery', gallery);
+//app.get('/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public/html/gallery.html')));
 app.get('/local/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public/html/gallery.html')));
 app.get('/local/about', (req, res) => res.sendFile(path.join(__dirname, 'public/html/local_about.html')));
 
 // Protected pages
-app.get('/local/gallery', requireAuth(5), (req, res) => res.sendFile(path.join(__dirname, 'public/html/gallery')));
+//app.get('/local/gallery', requireAuth(5), (req, res) => res.sendFile(path.join(__dirname, 'public/html/gallery')));
 app.use('/local/satdump', requireAuth(3), satdump);
 app.get('/local/stats', requireAuth(3), (req, res) => res.sendFile(path.join(__dirname, 'public/html/stats.html')));
 app.get('/local/admin', requireAuth(1), (req, res) => res.sendFile(path.join(__dirname, 'public/html/admin-center.html')));

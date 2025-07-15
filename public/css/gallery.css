@@ -340,7 +340,8 @@ size:10px
 #showCountSelect {
 background-color:var(--bg-dark);
 border:1px solid var(--border);
-color:var(--text)
+color:var(--text);
+width: 10%
 }
 
 .note-section,.note-card {
