@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
       FROM images
       JOIN recent_passes ON images.passId = recent_passes.id
       WHERE images.corrected = 1 AND images.filled = 1
-      ORDER BY recent_passes.timestamp DESC, images.id ASC
+      ORDER BY recent_passes.timestamp DESC
     `;
       const stmt = db.prepare(query);
       const rows = stmt.all().map(img => {
@@ -78,7 +78,24 @@ router.get('/', async (req, res) => {
         compositeDisplay: displayKey ? COMPOSITE_TYPES[displayKey] : 'Other'
       };
     });
-      initialData = rows;
+      
+    const grouped = new Map();
+
+    rows.forEach(img => {
+      if (!grouped.has(img.passId)) {
+        grouped.set(img.passId, {
+          satellite: img.satellite,
+          timestamp: img.timestamp,
+          name: img.name,
+          rawDataPath: img.rawDataPath,
+          images: []
+        });
+      }
+      grouped.get(img.passId).images.push(img);
+    });
+
+    initialData = Array.from(grouped.values());
+
     } catch (err) {
       console.error('Error fetching simplified data:', err);
     }
@@ -89,6 +106,21 @@ router.get('/', async (req, res) => {
     simplified,
     initialData
   });
+
+  try {
+    const res = await fetch('http://localhost:1500/api/update', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.updated) {
+      console.log('New data received, reloading images...');
+      await loadImages();
+    } else {
+      console.log('No update needed.');
+    }
+  } catch (err) {
+    console.warn('Update failed or on cooldown.', err);
+  }
+
 });
 
 module.exports = router;

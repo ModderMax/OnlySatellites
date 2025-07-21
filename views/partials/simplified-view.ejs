@@ -1,81 +1,9 @@
 <div class="simplified-gallery" id="gallery" style="margin-left: 10%; margin-right: 10%">
-  <% if (initialData && initialData.length > 0) { %>
-    <% 
-    const passGroups = {};
-    initialData.forEach(item => {
-      const key = item.passId;
-      if (!passGroups[key]) {
-        passGroups[key] = {
-          satellite: item.satellite,
-          timestamp: item.timestamp,
-          rawDataPath: item.rawDataPath,
-          name: item.name,
-          images: []
-        };
-      }
-      passGroups[key].images.push(item);
-    });
-    
-    const sortedPasses = Object.values(passGroups).sort((a, b) => b.timestamp - a.timestamp);
-    %>
-    
-    <% sortedPasses.forEach((pass, index) => { %>
-      <div class="pass-section">
-        <div class="pass-header">
-          <div class="pass-title">
-            <strong><%= pass.satellite || 'Unknown' %> - <%= new Date(pass.timestamp * 1000).toLocaleString() %></strong>
-          </div>
-          <div class="pass-actions">
-            <% if (pass.name) { %>
-              <a href="/api/zip?path=<%= encodeURIComponent('live_output/' + pass.name) %>" class="export-zip" title="Download full pass as .zip">🗀</a>
-            <% } %>
-            <% if (pass.rawDataPath && pass.rawDataPath !== '0.0') { %>
-              <a href="/api/export?path=<%= encodeURIComponent('live_output/' + pass.name + '/' + pass.rawDataPath) %>" download class="export-raw" title="Download raw data">⭳</a>
-            <% } %>
-            <span class="arrow" onclick="togglePass('pass-<%= index %>')">▼</span>
-          </div>
-        </div>
-        <div class="pass-images" id="pass-<%= index %>">
-          <% pass.images.forEach(img => { %>
-            <div class="image-card">
-              <% 
-              const imagePath = "images/" + img.path.replace(/\\/g, '/');
-              const thumbnailPath = getThumbnailPath(imagePath);
-              %>
-              <a href="<%= imagePath %>" target="_blank">
-                <img loading="lazy" src="<%= thumbnailPath %>" alt="Image">
-              </a>
-              <div class="meta" onclick="openLightbox('<%= imagePath %>')">
-                <div><strong>Date:</strong> <%= new Date(img.timestamp * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) %></div>
-                <div><strong>Satellite:</strong> <%= img.satellite %></div>
-                <div><strong>Composite:</strong> <%= img.compositeDisplay %></div>
-                <div><strong>Height:</strong> <%= img.vPixels %>px</div>
-              </div>
-            </div>
-          <% }) %>
-        </div>
-      </div>
-    <% }); %>
-  <% } else { %>
-    <div class="no-data">No satellite passes found.</div>
-  <% } %>
+  <noscript>
+    <div class="no-data">JavaScript is required to display this gallery.</div>
+  </noscript>
 </div>
 
 <div id="lightbox" class="lightbox" onclick="closeLightbox()">
   <img id="lightbox-img" src="" alt="Large view">
 </div>
-
-<% function getThumbnailPath(imagePath) {
-  if (!imagePath || typeof imagePath !== 'string') {
-    return '';
-  }
-
-  const lastSlashIndex = imagePath.lastIndexOf('/');
-  if (lastSlashIndex === -1) return '';
-
-  const dir = imagePath.slice(0, lastSlashIndex);
-  const filename = imagePath.slice(lastSlashIndex + 1);
-  const filenameWebp = filename.replace(/\.[^/.]+$/, '.webp');
-
-  return dir + '/thumbnails/' + filenameWebp;
-} %>

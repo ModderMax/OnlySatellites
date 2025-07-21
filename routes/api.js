@@ -39,69 +39,6 @@ const COMPOSITE_TYPES = {
   'fy-2x': 'SVISSR'
 };
 
-router.get('/simplified', (req, res) => {
-  try {
-    const query = `
-      WITH recent_passes AS (
-        SELECT DISTINCT
-          passes.id,
-          passes.timestamp,
-          passes.satellite,
-          passes.rawDataPath,
-          passes.name
-        FROM passes
-        JOIN images ON passes.id = images.passId
-        WHERE images.corrected = 1 AND images.filled = 1
-        ORDER BY passes.timestamp DESC
-        LIMIT 10
-      )
-      SELECT
-        images.*,
-        recent_passes.timestamp,
-        recent_passes.satellite,
-        recent_passes.rawDataPath,
-        recent_passes.name
-      FROM images
-      JOIN recent_passes ON images.passId = recent_passes.id
-      WHERE images.corrected = 1 AND images.filled = 1
-      ORDER BY recent_passes.timestamp DESC, images.id ASC
-    `;
-
-    const stmt = db.prepare(query);
-    const rows = stmt.all().map(img => {
-      const displayKey = Object.keys(COMPOSITE_TYPES)
-        .sort((a, b) => b.length - a.length)
-        .find(prefix => img.composite?.toLowerCase().includes(prefix.toLowerCase()));
-      return {
-        ...img,
-        compositeDisplay: displayKey ? COMPOSITE_TYPES[displayKey] : 'Other'
-      };
-    });
-
-    // Group images by passId
-    const grouped = {};
-    rows.forEach(img => {
-      const key = img.passId;
-      if (!grouped[key]) {
-        grouped[key] = {
-          satellite: img.satellite,
-          timestamp: img.timestamp,
-          name: img.name,
-          rawDataPath: img.rawDataPath,
-          images: []
-        };
-      }
-      grouped[key].images.push(img);
-    });
-
-    // Send back grouped passes as array
-    res.json(Object.values(grouped));
-  } catch (err) {
-    console.error('Error in /api/simplified:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
 router.get('/images', (req, res) => {
   try {
     const filters = [];

@@ -1,15 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-  loadSimplifiedImages();
+  renderSimplifiedImages(initialData);
   document.getElementById('collapseAll')?.addEventListener('change', collapseAll);
 });
 
-async function loadSimplifiedImages() {
+function renderSimplifiedImages(passes) {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = '';
   gallery.classList.remove('flat-gallery');
 
-  const res = await fetch('/api/simplified');
-  const passes = await res.json();
   const fragment = document.createDocumentFragment();
 
   passes.forEach((pass, index) => {
@@ -31,19 +29,28 @@ async function loadSimplifiedImages() {
         <div class="pass-actions">
           ${zipLink}
           ${exportLink}
-          <span class="arrow" onclick="togglePass('${passId}')">▶</span>
+          <span class="arrow" onclick="togglePass('${passId}')"></span>
         </div>
       </div>
       <div class="pass-images" id="${passId}"></div>
     `;
 
     const passImagesContainer = wrapper.querySelector(`#${passId}`);
-    pass.images.forEach(img => {
-      passImagesContainer.appendChild(createImageCard(img));
-    });
+    if (Array.isArray(pass.images)) {
+      pass.images.forEach(img => {
+        passImagesContainer.appendChild(createImageCard(img));
+      });
+    }
 
-    passImagesContainer.style.display = 'none';
-    wrapper.classList.add('collapsed');
+    if (index === 0) {
+      passImagesContainer.style.display = 'flex';
+      wrapper.classList.remove('collapsed');
+      wrapper.querySelector('.arrow').textContent = '▼';
+    } else {
+      passImagesContainer.style.display = 'none';
+      wrapper.classList.add('collapsed');
+      wrapper.querySelector('.arrow').textContent = '▶';
+    }
 
     fragment.appendChild(wrapper);
   });
