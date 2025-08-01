@@ -77,7 +77,7 @@ app.use('/api/hm', requireAuth(2), hmRoute);
 app.use('/api/update', updateRoute);
 app.use('/api/userControls', userControls);
 app.use('/api/satdump', requireAuth(3), satdump);
-app.use('/local', requireAuth(3), satdumpImages);
+app.use('/local', satdumpImages);
 app.use('/api/admin', requireAuth(0), adminCenter);
 app.use('/vendor/chart', express.static(path.join(__dirname, 'node_modules/chart.js/dist')));
 app.use('/vendor/chart-plugin', express.static(path.join(__dirname, 'node_modules/chartjs-plugin-streaming/dist')));

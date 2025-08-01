@@ -315,7 +315,6 @@ router.get('/composites', (req, res) => {
 
     res.json(response);
   } else {
-    // No satellite filter: return all known types plus 'Other'
     const response = Object.entries(COMPOSITE_TYPES).map(([value, label]) => ({ value, label }));
     response.push({ value: 'other', label: 'Other' });
     res.json(response);
@@ -325,12 +324,18 @@ router.get('/composites', (req, res) => {
 router.get('/export', (req, res) => {
   const filePath = req.query.path;
 
-  if (!filePath || !filePath.endsWith('.cadu') || !filePath.startsWith('live_output')) {
+  if (!filePath || !filePath.endsWith('.cadu')) {
     console.warn(`[EXPORT] Invalid request path: ${filePath}`);
     return res.status(400).send('Invalid file request');
   }
 
-  const absPath = path.join(__dirname, '..', filePath);
+  const absPath = path.resolve(__dirname, '..', filePath);
+  const safeBase = path.resolve(__dirname, '..', 'live_output');
+
+  if (!absPath.startsWith(safeBase)) {
+    console.warn(`[EXPORT] Path traversal detected: ${absPath}`);
+    return res.status(400).send('Invalid file request');
+  }
 
   fs.access(absPath, fs.constants.F_OK, (err) => {
     if (err) {
@@ -341,7 +346,9 @@ router.get('/export', (req, res) => {
     res.download(absPath, (err) => {
       if (err) {
         console.error(`[EXPORT] Error during download:`, err);
-        res.status(500).send('Could not download file');
+        if (!res.headersSent) {
+          res.status(500).send('Could not download file');
+        }
       }
     });
   });

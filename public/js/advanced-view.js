@@ -1,24 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  
-});
-
-window.addEventListener('load', async () => {
-  await fetchOptions();
-  await loadImages();
-
-  try {
-    const res = await fetch('/api/update', { method: 'POST' });
-    const data = await res.json();
-
-    if (data.updated) {
-      console.log('New data received, reloading images...');
-      await loadImages();
-    } else {
-      console.log('No update needed.');
-    }
-  } catch (err) {
-    console.warn('Update failed or on cooldown.', err);
-  }
 });
 
 document.getElementById('sortByPass')?.addEventListener('change', () => {

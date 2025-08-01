@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const Database = require('better-sqlite3');
-const isSimplified = mode => mode === 'simple';
 const path = require('path');
 
 const dataDir = path.join(__dirname, '..', 'data');
@@ -113,7 +112,6 @@ router.get('/', async (req, res) => {
 
     if (data.updated) {
       console.log('New data received, reloading images...');
-      await loadImages();
     } else {
       console.log('No update needed.');
     }
