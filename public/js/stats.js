@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refresh-pins').addEventListener('click', refreshPinnedValues);
 
   // Fetch system stats and determine the host IP dynamically
-  fetch('/api/stats')
+  fetch('../api/stats')
     .then(res => res.json())
     .then(data => {
       const { systemUptime, serverUptime, osInfo, ipv4Addresses, memoryUsage } = data;
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refreshPinnedValues() {
-    fetch('/api/hm/stats')
+    fetch('../api/hm/stats')
     .then(res => res.json())
     .then(data => {
       hmStats = data; // Update global stats list
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
   // Fetch and process hm stats
-  fetch('/api/hm/stats')
+  fetch('../api/hm/stats')
   .then(res => res.json())
   .then(hmData => {
     console.log("hm Data:", hmData);
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchBox.addEventListener('input', function (event) {
     const query = event.target.value.toLowerCase();
   
-    fetch('/api/hm/stats')
+    fetch('../api/hm/stats')
       .then(res => res.json())
       .then(data => {
         const filtered = data.filter(sensor =>

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!statsDiv) return;
 
   try {
-    const res = await fetch('/api/admin/disk-stats');
+    const res = await fetch('../api/admin/disk-stats');
     const data = await res.json();
 
     if (data.error) {

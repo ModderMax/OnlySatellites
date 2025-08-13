@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const iframe = document.getElementById('satdump-frame');
 
   const updateIframe = () => {
-    iframe.src = `/api/satdump/status`;
+    iframe.src = `../api/satdump/status`;
   };
 
   updateIframe(); // initial load

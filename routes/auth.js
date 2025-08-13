@@ -24,9 +24,9 @@ router.post('/login', express.urlencoded({ extended: true }), async (req, res) =
     req.session.username = username;
     req.session.level = user.level;
     if (user.level === 0) {
-      res.redirect('/local/admin');
+      res.redirect('local/admin');
     } else {
-      res.redirect('/local/satdump')
+      res.redirect('local/satdump')
     }
   } else {
     res.status(401).send('Invalid username or password');
