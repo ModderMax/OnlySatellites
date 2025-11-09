@@ -1,4 +1,20 @@
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', async () => {
+  await fetchOptions();
+  await loadImages();
+
+  try {
+    const res = await fetch('api/update', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.updated) {
+      console.log('New data received, reloading images...');
+      await loadImages();
+    } else {
+      console.log('No update needed.');
+    }
+  } catch (err) {
+    console.warn('Update failed or on cooldown.', err);
+  }
 });
 
 document.getElementById('sortByPass')?.addEventListener('change', () => {
@@ -13,25 +29,10 @@ document.getElementById('showUnfilled')?.addEventListener('change', loadImages);
 document.getElementById('mapsOnly')?.addEventListener('change', loadImages);
 document.getElementById('sortFilter')?.addEventListener('change', loadImages);
 document.getElementById('useUTC')?.addEventListener('change', loadImages);
-document.getElementById('showNotes')?.addEventListener('change', loadImages);
 document.getElementById('collapseAll')?.addEventListener('change', collapseAll);
 
-document.getElementById('showCountSelect')?.addEventListener("keypress", () => {
-  if (event.key === "Enter") {
-    loadImages();
-  }
-});
-
-document.getElementById('repopulate-btn')?.addEventListener('click', async () => {
-  if (!confirm('Are you sure you want to repopulate the database?')) return;
-  try {
-    const res = await fetch('/api/repopulate', { method: 'POST' });
-    const text = await res.text();
-    alert(text);
-  } catch (err) {
-    alert('Failed to repopulate.');
-    console.error(err);
-  }
+document.getElementById('showCountSelect')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') loadImages();
 });
 
 function getCountLimit() {
@@ -51,17 +52,21 @@ function updateCountLimit() {
   const showCountLabel = document.getElementById('showCountLabel');
   const showCountInput = document.getElementById('showCountSelect');
 
+  if (!showCountLabel || !showCountInput) return;
+
+  const current = parseInt(showCountInput.value, 10) || 50;
+
   if (groupByPass) {
     showCountLabel.textContent = 'Passes';
-    showCountInput.value = showCountInput.value * 0.1;
+    showCountInput.value = Math.max(1, Math.floor(current * 0.1));
   } else {
     showCountLabel.textContent = 'Images';
-    showCountInput.value = showCountInput.value * 10;
+    showCountInput.value = Math.max(1, current * 10);
   }
 }
 
 function getPassDir(rawPath) {
-  const parts = rawPath.split('/');
+  const parts = (rawPath || '').split('/');
   parts.pop();
   return parts.join('/');
 }
@@ -69,34 +74,30 @@ function getPassDir(rawPath) {
 function formatTimestamp(ts) {
   if (!ts) return 'Unknown';
   const date = new Date(ts * 1000);
-  if (document.getElementById('useUTC')?.checked)
-  {
-  return isNaN(date.getTime()) ? 'Unknown' : date.toUTCString();
+  if (document.getElementById('useUTC')?.checked) {
+    return isNaN(date.getTime()) ? 'Unknown' : date.toUTCString();
   }
   return isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString();
 }
 
-function toggleDropdown(event, dropdownId = 'settingsDropdown') {
+function toggleDropdown(event) {
   event.stopPropagation();
-
   const button = event.currentTarget;
   const dropdownWrapper = button.closest('.dropdown');
-  const dropdown = dropdownWrapper.querySelector('.dropdown-content');
+  const dropdown = dropdownWrapper?.querySelector('.dropdown-content');
+  if (!dropdownWrapper || !dropdown) return;
 
-  // First toggle visibility so we can measure dimensions
   dropdownWrapper.classList.toggle('show');
 
   if (dropdownWrapper.classList.contains('show')) {
-    // Reset styles before measuring
     dropdown.style.left = '';
     dropdown.style.right = '';
-    
+
     const rect = dropdown.getBoundingClientRect();
     const overflowRight = rect.right > window.innerWidth;
 
     if (overflowRight) {
-      // Align the right edge of the dropdown with the right edge of the button
-      const offset = rect.right - window.innerWidth + 10; // 10px padding
+      const offset = rect.right - window.innerWidth + 10;
       dropdown.style.left = `-${offset}px`;
     }
   }
@@ -104,10 +105,13 @@ function toggleDropdown(event, dropdownId = 'settingsDropdown') {
 
 function togglePass(id) {
   const section = document.getElementById(id);
+  if (!section) return;
+
   const isVisible = section.style.display !== 'none';
   section.style.display = isVisible ? 'none' : 'flex';
-  const arrow = section.previousElementSibling.querySelector('.arrow');
-  arrow.textContent = isVisible ? '▶' : '▼';
+  const header = section.previousElementSibling;
+  const arrow = header?.querySelector('.arrow');
+  if (arrow) arrow.textContent = isVisible ? '▶' : '▼';
 }
 
 function collapseAll() {
@@ -117,7 +121,6 @@ function collapseAll() {
   for (const section of sections) {
     const images = section.querySelector('.pass-images');
     const arrow = section.querySelector('.arrow');
-
     if (!images || !arrow) continue;
 
     if (controller) {
@@ -135,39 +138,44 @@ function collapseAll() {
 function openLightbox(imageSrc) {
   const lightbox = document.getElementById('lightbox');
   const img = document.getElementById('lightbox-img');
+  if (!lightbox || !img) return;
   img.src = imageSrc;
   lightbox.style.display = 'flex';
 }
 
 function closeLightbox() {
-  document.getElementById('lightbox').style.display = 'none';
+  const lb = document.getElementById('lightbox');
+  if (lb) lb.style.display = 'none';
 }
 
 document.addEventListener('click', () => {
-  document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-    dropdown.classList.remove('show');
-  });
+  document.querySelectorAll('.dropdown-content').forEach(dd => dd.classList.remove('show'));
 });
 
 async function fetchOptions() {
   const satSelect = document.getElementById('satelliteFilter');
   const bandSelect = document.getElementById('bandFilter');
+  if (!satSelect || !bandSelect) return;
 
   const satellites = await fetch('/api/satellites').then(res => res.json());
-  satSelect.innerHTML = '<option value="">All Satellites</option>' + satellites.map(s => `<option value="${s}">${s}</option>`).join('');
+  satSelect.innerHTML = '<option value="">All Satellites</option>' +
+    satellites.map(s => `<option value="${s}">${s}</option>`).join('');
 
   const bands = await fetch('/api/bands').then(res => res.json());
-  bandSelect.innerHTML = '<option value="">All Bands</option>' + bands.map(b => `<option value="${b}">${b}</option>`).join('');
+  bandSelect.innerHTML = '<option value="">All Bands</option>' +
+    bands.map(b => `<option value="${b}">${b}</option>`).join('');
 
   satSelect.addEventListener('change', async () => {
     await updateCompositeOptions(satSelect.value);
   });
 
-  await updateCompositeOptions(''); 
+  await updateCompositeOptions('');
 }
 
 async function updateCompositeOptions(satellite) {
   const compFilter = document.getElementById('compositeFilter');
+  if (!compFilter) return;
+
   const query = satellite ? `?satellite=${encodeURIComponent(satellite)}` : '';
   const composites = await fetch(`/api/composites${query}`).then(res => res.json());
 
@@ -179,16 +187,38 @@ async function updateCompositeOptions(satellite) {
     </div>
     ${composites.map(c => `
       <label>
-        <input type="checkbox" value="${c.value}" class="composite-checkbox" checked>
-        ${c.label}
+        <input type="checkbox" value="${c}" class="composite-checkbox" checked>
+        ${c}
       </label>
     `).join('')}
   `;
 }
 
+function groupImagesBySensor(images) {
+  const map = new Map();
+  for (const img of images || []) {
+    const sensor = img?.sensor || 'Unknown Sensor';
+    if (!map.has(sensor)) map.set(sensor, []);
+    map.get(sensor).push(img);
+  }
+  return map;
+}
+
+function sortImagesInPlace(images, sorting) {
+  if (sorting === 'newest') {
+    images.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  } else if (sorting === 'oldest') {
+    images.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  } else if (sorting === 'hpix') {
+    images.sort((a, b) => (b.vPixels || 0) - (a.vPixels || 0));
+  } else if (sorting === 'lpix') {
+    images.sort((a, b) => (a.vPixels || 0) - (b.vPixels || 0));
+  }
+}
+
 function selectAllComposites(selectAll) {
   document.querySelectorAll('#compositeFilter .composite-checkbox').forEach(cb => {
-    cb.checked = selectAll;
+    cb.checked = !!selectAll;
   });
 }
 
@@ -227,7 +257,7 @@ function getFilters() {
   params.append('sortOrder', sortOrder);
 
   const mapsOnly = document.getElementById('mapsOnly')?.checked;
-  if (mapsOnly) params.append('map', 'only');
+  if (mapsOnly) params.append('mapsOnly', '1');
 
   const correctedOnly = document.getElementById('correctedOnly')?.checked;
   if (correctedOnly) params.append('correctedOnly', '1');
@@ -242,169 +272,158 @@ function getFilters() {
 }
 
 async function loadImages() {
-  console.log("loadImages called");
+  console.log('loadImages called');
   const groupByPass = document.getElementById('sortByPass')?.checked;
   const params = getFilters();
 
-  let images = [], notes = [];
-
+  let images = [];
   try {
-    const [imagesRes, notesRes] = await Promise.all([
-      fetch(`/api/images?${params.toString()}`),
-      fetch('/api/userControls')
-    ]);
-
-    if (imagesRes.ok) images = await imagesRes.json();
-    else console.error('Failed to fetch images');
-
-    if (notesRes.ok) notes = await notesRes.json();
-    else console.error('Failed to fetch notes');
+    const imagesRes = await fetch(`/api/images?${params.toString()}`);
+    if (!imagesRes.ok) {
+      console.error('[images] HTTP', imagesRes.status);
+    } else {
+      const ct = imagesRes.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        console.error('[images] Non-JSON response, treating as empty');
+      } else {
+        const parsed = await imagesRes.json();
+        if (Array.isArray(parsed)) {
+          images = parsed;
+        } else if (parsed && Array.isArray(parsed.images)) {
+          images = parsed.images;
+        } else if (parsed && Array.isArray(parsed.data)) {
+          images = parsed.data;
+        } else {
+          console.warn('[images] JSON not an array; got:', parsed);
+          images = [];
+        }
+      }
+    }
   } catch (err) {
-    console.error('Error fetching image/note data:', err);
-    return;
+    console.error('Error fetching image data:', err);
   }
 
-  const showNotes = document.getElementById('showNotes')?.checked;
-
-  let unified = [
-    ...images.map(img => ({ ...img, type: 'image' }))
-  ];
-  
-  if (showNotes) {
-    unified = unified.concat(notes.map(note => ({ ...note, type: 'note' })));
-  }
+  const toSec = (v) => {
+    if (typeof v !== 'number') return NaN;
+    return v > 1_000_000_000_000 ? Math.floor(v / 1000) : v;
+  };
+  images.forEach(i => { if (i && i.timestamp != null) i.timestamp = toSec(i.timestamp); });
 
   const gallery = document.getElementById('gallery');
+  if (!gallery) return;
   gallery.innerHTML = '';
   const fragment = document.createDocumentFragment();
 
   if (groupByPass) {
     gallery.classList.remove('flat-gallery');
-  
-    const passGroups = {};
-    const renderQueue = [];
-  
-    unified.forEach(item => {
-      if (item.type === 'image') {
-        const key = item.passId;
-        if (!passGroups[key]) {
-          passGroups[key] = {
-            type: 'pass',
-            satellite: item.satellite,
-            timestamp: item.timestamp,
-            rawDataPath: item.rawDataPath || 0,
-            name: item.name,
-            images: [],
-            passId: key,
-            added: false
-          };
-        }
-        passGroups[key].images.push(item);
-      }
-  
-      if (item.type === 'note') {
-        renderQueue.push(item);
-      }
-    });
-  
-    Object.values(passGroups).forEach(group => {
-      if (!group.added) {
-        renderQueue.push(group);
-        group.added = true;
-      }
-    });
-    
-    const sorting = document.getElementById('sortFilter')?.value
-    if(sorting === 'newest')
-    {
-      renderQueue.sort((a, b) => b.timestamp - a.timestamp);
-    } else if (sorting === 'oldest') {
-      renderQueue.sort((a, b) => a.timestamp - b.timestamp);
-    } else {
-      renderQueue.sort((a, b) => b.type - a.type);
-    }
-  
-    renderQueue.forEach((item, index) => {
-      if (item.type === 'note') {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'pass-section note-section collapsed';
-        wrapper.innerHTML = `
-          <div class="pass-header" onclick="togglePass('note-${item.timestamp}')">
-            <strong>📝 ${item.title} ${formatTimestamp(item.timestamp)}</strong>
-            <span class="arrow">▼</span>
-          </div>
-          <div class="pass-images" id="note-${item.timestamp}">
-            <div class="note-description">${item.description}</div>
-          </div>
-        `;
-        fragment.appendChild(wrapper);
-      } else if (item.type === 'pass') {
-        const passId = `pass-${index}`;
-        const passName = item.name || '';
-        const wrapper = document.createElement('div');
-        wrapper.className = 'pass-section';
-  
-        const exportLink = (item.rawDataPath && item.rawDataPath !== '0.0')
-          ? `<a href="/api/export?path=${encodeURIComponent("live_output/" + passName + "/" + item.rawDataPath)}" download class="export-raw" title="Download raw data">⭳</a>`
-          : '';
 
-        const zipLink = passName
-          ? `<a href="/api/zip?path=${encodeURIComponent('live_output/' + passName)}" class="export-zip" title="Download full pass as .zip">🗀</a>`
-          : '';
-  
-        wrapper.innerHTML = `
-          <div class="pass-header">
-            <div class="pass-title"><strong>${item.satellite || 'Unknown'} - ${formatTimestamp(item.timestamp)}</strong></div>
-            <div class="pass-actions">
-              ${zipLink}
-              ${exportLink}
-              <span class="arrow" onclick="togglePass('${passId}')">▼</span>
-            </div>
-          </div>
-          <div class="pass-images" id="${passId}"></div>
-        `;
-  
-        const passImagesContainer = wrapper.querySelector(`#${passId}`);
-        item.images.forEach(img => {
-          passImagesContainer.appendChild(createImageCard(img));
-        });
-  
-        fragment.appendChild(wrapper);
+    const passGroups = Object.create(null);
+
+    images.forEach(img => {
+      const key = img.passId != null ? String(img.passId) : `u-${Math.random()}`;
+      let g = passGroups[key];
+      if (!g) {
+        g = passGroups[key] = {
+          type: 'pass',
+          satellite: img.satellite,
+          timestamp: img.timestamp,
+          rawDataPath: img.rawDataPath || 0,
+          name: img.name,
+          images: [],
+          passId: key,
+        };
+      }
+      g.images.push(img);
+      if (typeof img.timestamp === 'number' && (typeof g.timestamp !== 'number' || img.timestamp > g.timestamp)) {
+        g.timestamp = img.timestamp;
       }
     });
-  } else {
-    // Flat gallery view (no grouping by pass)
-    gallery.classList.add('flat-gallery');
-    
-    // Sort the unified array based on user selection
+
+    const renderQueue = Object.values(passGroups)
+      .filter(group => Array.isArray(group.images) && group.images.length > 0);
+
     const sorting = document.getElementById('sortFilter')?.value;
     if (sorting === 'newest') {
-      unified.sort((a, b) => b.timestamp - a.timestamp);
+      renderQueue.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     } else if (sorting === 'oldest') {
-      unified.sort((a, b) => a.timestamp - b.timestamp);
-    } else {
-      unified.sort((a, b) => b.type - a.type);
+      renderQueue.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     }
-    
-    // Render all items in a flat structure
-    unified.forEach(item => {
-      if (item.type === 'image') {
-        fragment.appendChild(createImageCard(item));
-      } else if (item.type === 'note' && showNotes) {
-        const noteCard = document.createElement('div');
-        
-        noteCard.innerHTML = `
-          <div class="note-header">
-            <strong>📝 ${item.title}</strong>
+
+    renderQueue.forEach((item, index) => {
+      const passId = `pass-${index}`;
+      const passName = item.name || '';
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pass-section';
+      const parts = String(item.rawDataPath || '').split('.');
+      const dataExt = parts.length > 1 ? parts.pop() : '';
+
+      const exportLink = (item.rawDataPath && item.rawDataPath !== 'NOT_CONFIGURED')
+        ? `<a href="/api/export?path=${encodeURIComponent(passName + "/" + item.rawDataPath)}" download class="export-raw" title="Download raw data"><b>.${dataExt}</b></a>`
+        : '';
+
+      const zipLink = passName
+        ? `<a href="/api/zip?path=${encodeURIComponent(passName)}" class="export-zip" title="Download full pass as .zip"><b>.zip</b></a>`
+        : '';
+
+      wrapper.innerHTML = `
+        <div class="pass-header">
+          <div class="pass-title"><strong>${item.satellite || 'Unknown'} - ${formatTimestamp(item.timestamp)}</strong></div>
+          <div class="pass-actions">
+            ${zipLink}
+            ${exportLink}
+            <span class="arrow" onclick="togglePass('${passId}')">▼</span>
           </div>
-          <div>
-            <div class="note-description">${formatTimestamp(item.timestamp)}\n${item.description}</div>
-          </div>
-        `;
-        fragment.appendChild(noteCard);
-      }
+        </div>
+        <div class="pass-images" id="${passId}"></div>
+      `;
+
+      const passImagesContainer = wrapper.querySelector(`#${passId}`);
+if (Array.isArray(item.images) && passImagesContainer) {
+  const sorting = document.getElementById('sortFilter')?.value;
+  const bySensor = groupImagesBySensor(item.images);
+  const sensorNames = Array.from(bySensor.keys()).sort((a, b) => a.localeCompare(b));
+
+  sensorNames.forEach(sensorName => {
+    const imagesForSensor = bySensor.get(sensorName) || [];
+    sortImagesInPlace(imagesForSensor, sorting);
+
+    const block = document.createElement('div');
+    block.className = 'sensor-block';
+
+    const title = document.createElement('div');
+    title.className = 'sensor-title';
+    title.textContent = sensorName;
+
+    const container = document.createElement('div');
+    container.className = 'sensor-images';
+
+    imagesForSensor.forEach(img => container.appendChild(createImageCard(img)));
+
+    block.appendChild(title);
+    block.appendChild(container);
+    passImagesContainer.appendChild(block);
+  });
+}
+fragment.appendChild(wrapper);
     });
+
+  } else {
+    gallery.classList.add('flat-gallery');
+
+    const sorting = document.getElementById('sortFilter')?.value;
+    if (sorting === 'newest') {
+      images.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    } else if (sorting === 'oldest') {
+      images.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    } else if (sorting === 'hpix') {
+      images.sort((a, b) => (b.vPixels || 0) - (a.vPixels || 0));
+    } else if (sorting === 'lpix') {
+      images.sort((a, b) => (a.vPixels || 0) - (b.vPixels || 0));
+    }
+
+    images.forEach(img => fragment.appendChild(createImageCard(img)));
   }
+
   gallery.appendChild(fragment);
 }
 
@@ -427,56 +446,24 @@ function getThumbnailPath(imagePath) {
 function createImageCard(img) {
   const wrapper = document.createElement('div');
   wrapper.className = 'image-card';
-  const imagePath = "images/" + img.path.replace(/\\/g, '/');
-  const tPath = getThumbnailPath(imagePath);
+  const imagePath = 'images/' + String(img.path || '').replace(/\\/g, '/');
+  const tPath = getThumbnailPath(img.path);
+
+  const dateStr = img.timestamp
+    ? new Date(img.timestamp * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+    : 'Unknown';
+
   wrapper.innerHTML = `
     <a href="${imagePath}" target="_blank">
       <img loading="lazy" src="${tPath}" alt="Image">
     </a>
     <div class="meta" onclick="openLightbox('${imagePath}')">
-      <div><strong>Date:</strong> ${img.timestamp ?
-        new Date(img.timestamp * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown'}</div>
-      <div><strong>Satellite:</strong> ${img.satellite}</div>
-      <div><strong>Composite:</strong> ${img.compositeDisplay}</div>
-      <div><strong>Height:</strong> ${img.vPixels}px</div>
+      <div><strong>Date:</strong> ${dateStr}</div>
+      <div><strong>Satellite:</strong> ${img.satellite ?? ''}</div>
+      <div><strong>Composite:</strong> ${img.composite ?? ''}</div>
+      <div><strong>Height:</strong> ${img.vPixels ?? ''}px</div>
     </div>
   `;
+  wrapper.classList.add('collapsed');
   return wrapper;
-}
-
-function openNotePopup() {
-  document.getElementById('notePopup').style.display = 'flex';
-  document.getElementById('noteTime').value = new Date().toISOString().slice(0,16);
-}
-
-function closeNotePopup() {
-  document.getElementById('notePopup').style.display = 'none';
-  document.getElementById('noteTitle').value = '';
-  document.getElementById('noteDescription').value = '';
-}
-
-async function submitNote() {
-  const isoInput = document.getElementById('noteTime').value;
-  let timestamp = new Date (isoInput).getTime(); 
-  timestamp = Math.floor(timestamp / 1000);
-  const title = document.getElementById('noteTitle').value.trim();
-  const description = document.getElementById('noteDescription').value.trim();
-
-  if (!timestamp || !title || !description) {
-    alert("Please fill out all fields.");
-    return;
-  }
-
-  const res = await fetch('/api/userControls', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ timestamp, title, description })
-  });
-
-  if (res.ok) {
-    closeNotePopup();
-    loadImages();
-  } else {
-    alert("Failed to save note.");
-  }
 }

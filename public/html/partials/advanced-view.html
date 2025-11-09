@@ -1,0 +1,120 @@
+{{define "advanced"}}
+<h1>
+  <div class="dropdown" id="settingsButton">
+    <button onclick="toggleDropdown(event, 'settingsButton')">⚙️</button>
+    <div class="dropdown-content checkbox-group" id="settingsDropdown">
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="mapsOnly">
+          <span class="slider round"></span>
+        </label>
+        <div>Maps Only</div>
+      </div>
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="correctedOnly" checked>
+          <span class="slider round"></span>
+        </label>
+        <div>Corrected Only</div>
+      </div>
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="showUnfilled">
+          <span class="slider round"></span>
+        </label>
+        <div>Show Unfilled</div>
+      </div>
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="sortByPass" checked>
+          <span class="slider round"></span>
+        </label>
+        <div>Group By Pass</div>
+      </div>
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="useUTC">
+          <span class="slider round"></span>
+        </label>
+        <div>UTC</div>
+      </div>
+      <div class="sliderContainer">
+        <label class="switch">
+          <input type="checkbox" id="collapseAll" checked>
+          <span class="slider round"></span>
+        </label>
+        <div>Collapse All</div>
+      </div>
+    </div>
+  </div>
+</h1>
+
+<div class="filters">
+  <select id="satelliteFilter"></select>
+  <select id="bandFilter"><option value="All Bands">Newest</option></select>
+
+  <div class="dropdown" id="compositeDropdown">
+    <button onclick="toggleDropdown(event, 'compositeDropdown')">Composites</button>
+    <div class="dropdown-content checkbox-group" id="compositeFilter">
+      <div class="composite-actions"></div>
+    </div>
+  </div>
+
+  <select id="sortFilter">
+    <option value="newest">Newest</option>
+    <option value="oldest">Oldest</option>
+    <option value="hpix">Highest Pixels</option>
+    <option value="lpix">Lowest Pixels</option>
+  </select>
+
+  <div class="dropdown" id="datetimeDropdown">
+    <button onclick="toggleDropdown(event, 'datetimeDropdown')">Filter Date/Time</button>
+    <div class="dropdown-content checkbox-group" id="datetimeDropdown-content" style="min-width: 260px;">
+      <div style="margin: 10px;">
+        <strong>Date Restriction</strong><br>
+        <label for="startDate">Start:</label>
+        <input type="date" id="startDate" style="margin-bottom: 5px;"><br>
+        <label for="endDate">End:</label>
+        <input type="date" id="endDate">
+      </div>
+      <div style="margin: 10px;">
+        <strong>Time Restriction</strong><br>
+        <label for="startTime">Start:</label>
+        <input type="time" id="startTime" style="margin-bottom: 5px;"><br>
+        <label for="endTime">End:</label>
+        <input type="time" id="endTime">
+      </div>
+    </div>
+  </div>
+
+  <label>Show</label>
+  <input id="showCountSelect" type="number" value="10">
+  <label id="showCountLabel" for="showCountSelect">Passes</label>
+  <button id="addNoteBtn" onclick="openNotePopup()">+ Add Note</button>
+</div>
+
+<div class="gallery" id="gallery">Loading Gallery...</div>
+
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="Large view">
+</div>
+
+<div id="notePopup" class="popup-overlay" style="display: none;">
+  <div class="popup-box">
+    <h3>Add New Note</h3>
+    <label for="noteTime">Date & Time:</label>
+    <input type="datetime-local" id="noteTime" required>
+
+    <label for="noteTitle">Title:</label>
+    <input type="text" id="noteTitle" maxlength="100" required>
+
+    <label for="noteDescription">Description:</label>
+    <textarea id="noteDescription" rows="5" maxlength="1000" required></textarea>
+
+    <div class="popup-buttons">
+      <button onclick="submitNote()">Save Note</button>
+      <button onclick="closeNotePopup()">Cancel</button>
+    </div>
+  </div>
+</div>
+{{end}}

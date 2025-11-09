@@ -1,0 +1,30 @@
+[server]
+port = ':1500'
+read_timeout = 30
+write_timeout = 30
+log_level = ''
+
+[database]
+max_open_conns = 1
+max_idle_conns = 1
+conn_max_lifetime = 0
+cache_size = 10000
+
+[paths]
+data_dir = 'data'
+live_output_dir = 'C:\\Users\max\OneDrive\Desktop\OnlySatellites\live_output'
+thumbnail_dir = ''
+log_dir = 'logs'
+
+[thumbgen]
+max_workers = 8
+batch_size = 1000
+thumbnail_width = 200
+quality = 50
+
+[stationproxy]
+enabled = true
+station_name = 'luna'
+station_secret = 'KbP8lD9HgSQw0XOacdUN-gP4Mz'
+frps_addr = 'stations.onlysatellites.com'
+frps_port = 7000

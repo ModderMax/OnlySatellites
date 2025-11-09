@@ -19,7 +19,6 @@ body {
 background-color:var(--bg);
 font-family:sans-serif;
 margin:0;
-overflow:hidden;
 padding:0
 }
 
@@ -155,3 +154,145 @@ border-width:1px
 .dropdown:hover .dropdown-content {
 display:block
 }
+
+
+.hidden { display: none; }
+.comp-modal { position: fixed; inset: 0; z-index: 1000; }
+.comp-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+.comp-modal-card { position: relative; margin: 5vh auto; max-width: 900px; background: #111; color: #eee; border-radius: 12px; padding: 12px; }
+.comp-modal-head { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #333; padding:8px 12px; }
+.comp-modal-body { padding: 12px; }
+.comp-close { font-size: 20px; line-height: 1; background: transparent; color: #eee; border: 0; cursor: pointer; }
+.comp-actions { display:flex; gap: 8px; margin-bottom: 10px; }
+.comp-table-wrap { max-height: 60vh; overflow:auto; border:1px solid #333; border-radius: 8px; }
+.comp-table { width: 100%; border-collapse: collapse; }
+.comp-table th, .comp-table td { border-bottom:1px solid #222; padding: 8px; }
+.comp-table input[type="text"] { width: 100%; }
+.comp-msg { margin-top: 8px; min-height: 20px; }
+.comp-bad { color: #ff6b6b; }
+.comp-ok { color: #63e6be; }
+.messages-feed {
+  display: grid;
+  place-items: center;
+  margin: 24px 0 56px;
+}
+
+/* 80% viewport width, fixed 400px height */
+.msg {
+  width: 80vw;
+  max-width: 1400px;
+  height: 280px;
+  display: grid;
+  grid-template-columns: minmax(240px, 30%) 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 16px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid var(--primary);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  margin: 14px 0;
+}
+
+/* color per type */
+.msg.type-info   { border-color: var(--primary); }
+.msg.type-warn   { border-color: var(--warning); }
+.msg.type-alert  { border-color: var(--danger);  }
+
+/* left image column spans full height */
+.msg__media {
+  grid-row: 1 / span 2;
+  grid-column: 1 / 2;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.03);
+  border-right: 2px solid currentColor;
+}
+
+/* tinted border matches type */
+.msg.type-info  .msg__media { color: var(--primary); }
+.msg.type-warn  .msg__media { color: var(--warning); }
+.msg.type-alert .msg__media { color: var(--danger);  }
+
+.msg__img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/* title top-left (but right of image) */
+/* timestamp next to title */
+.msg__title {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 0 0;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.msg__title::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 2px; /* lowered to align with timestamp */
+  background: var(--primary);
+}
+.msg.type-warn  .msg__title::before { background: var(--warning); }
+.msg.type-alert .msg__title::before { background: var(--danger);  }
+
+.msg__time {
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.msg__titletext {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+/* body area is the link */
+.msg__bodylink {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  padding: 6px 16px 16px 0;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+  height: 100%;
+}
+
+/* scroll is disabled; we clamp instead */
+.msg__body {
+  font-size: 0.98rem;
+  line-height: 1.4;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* multi-line ellipsis: clamp to fit ~400px minus title space; tweak as needed */
+  -webkit-line-clamp: 16;
+  line-clamp: 16; /* ~16 lines @ ~1.4 line-height fits below title */
+}
+
+/* fallback single-line ellipsis (if the browser ignores line-clamp) */
+.msg__body.fallback-ellipsis {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* when there is no image, collapse layout to text-only */
+.msg.no-image {
+  grid-template-columns: 1fr;
+}
+.msg.no-image .msg__media { display: none; }

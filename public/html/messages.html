@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages Admin</title>
+  <link rel="stylesheet" href="/colors.css" />
+  <style>
+    :root {
+      --bg: #0f1115; --panel: #171a21; --muted: #9aa4b2; --text: #eaeef5; --accent: #6aa8ff; --bad: #ff6a6a; --warn: #ffbf69; --ok:#48c78e;
+    }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, Segoe UI, Roboto, sans-serif; margin: 0; }
+    header { padding: 16px 20px; border-bottom: 1px solid #222833; display:flex; align-items:center; gap:12px; }
+    h1 { font-size: 20px; margin: 0; }
+    main { display: grid; grid-template-columns: 420px 1fr; gap: 16px; padding: 16px; }
+    .card { background: var(--panel); border: 1px solid #222833; border-radius: 12px; }
+    .card h2 { margin: 0; padding: 12px 16px; font-size: 16px; border-bottom: 1px solid #222833; }
+    .card .body { padding: 12px 16px; }
+    .row { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .row label { color: var(--muted); font-size: 12px; }
+    input[type="text"], textarea, select, input[type="datetime-local"] {
+      width: 100%; background:#0f1219; color:var(--text); border:1px solid #232a36; border-radius:8px; padding:8px 10px;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    .btns { display:flex; gap:8px; flex-wrap:wrap; }
+    button { background:#1d2330; color:var(--text); border:1px solid #2a3343; padding:8px 10px; border-radius:10px; cursor:pointer; }
+    button.primary { background: var(--accent); color: #0b1020; border-color: transparent; }
+    button.danger { background: var(--bad); color: #1b0b0b; border-color: transparent; }
+    button.warn   { background: var(--warn); color: #1b1306; border-color: transparent; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #222833; font-size: 14px; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing:.04em; text-transform: uppercase; }
+    .pill { padding:2px 8px; border-radius:999px; font-size:12px; display:inline-block; }
+    .pill.info  { background:#2a3e5e; }
+    .pill.warn  { background:#5e4a2a; }
+    .pill.alert { background:#5e2a2a; }
+    .imgprev { display:flex; align-items:center; gap:8px; }
+    .imgprev img { max-height: 64px; border-radius: 6px; border:1px solid #2a3343; }
+    .toolbar { display:flex; gap:6px; margin-bottom:8px; }
+    .toolbar button { background:#0f1219; border-color:#2a3343; }
+    .toast { position: fixed; right: 16px; bottom: 16px; background:#10151f; color:var(--text); border:1px solid #263246; padding:12px 14px; border-radius: 12px; display:none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Messages Admin</h1>
+    <span style="color:var(--muted);">Create, schedule, edit and delete messages</span>
+  </header>
+
+  <main>
+    <!-- Composer / Editor -->
+    <section class="card" id="editorCard">
+      <h2 id="formTitle">Create Message</h2>
+      <div class="body">
+        <form id="messageForm">
+          <input type="hidden" id="messageId" value="" />
+
+          <div class="row">
+            <label for="title">Title</label>
+            <input type="text" id="title" maxlength="200" required />
+          </div>
+
+          <div class="row">
+            <label for="type">Type</label>
+            <select id="type">
+              <option value="info">info</option>
+              <option value="warn">warn</option>
+              <option value="alert">alert</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label for="when">Date & Time</label>
+            <input type="datetime-local" id="when" />
+          </div>
+
+          <div class="row" style="align-items:start;">
+            <label for="message">Message (Markdown)</label>
+            <div>
+              <div class="toolbar">
+                <button type="button" data-md="**" title="Bold">B</button>
+                <button type="button" data-md="*"  title="Italic">I</button>
+                <button type="button" id="btnLink" title="Insert hyperlink">🔗</button>
+                <button type="button" id="btnCode" title="Code">{ }</button>
+                <button type="button" id="btnList" title="Bullet list">•</button>
+              </div>
+              <textarea id="message" placeholder="Write your message using Markdown..."></textarea>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="image">Image</label>
+            <div>
+              <input type="file" id="image" accept="image/*" />
+              <div class="imgprev" id="imgPrev" style="display:none; margin-top:8px;">
+                <img id="imgPreview" alt="preview" />
+                <button type="button" id="btnClearImage">Remove</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="btns">
+            <button class="primary" id="btnSave" type="submit">Save</button>
+            <button type="button" id="btnReset">Reset</button>
+            <button type="button" id="btnDelete" class="danger" style="margin-left:auto; display:none;">Delete</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- List -->
+    <section class="card">
+      <h2>All Messages</h2>
+      <div class="body">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>When (local)</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Image</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="btns" style="margin-top:12px;">
+          <button id="btnRefresh">Refresh</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/messages.js"></script>
+</body>
+</html>

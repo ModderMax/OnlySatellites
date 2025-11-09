@@ -7,33 +7,10 @@ function formatTimestamp(ts) {
     : date.toLocaleString();
 }
 
-function getThumbnailPath(imagePath) {
-  const lastSlashIndex = imagePath.lastIndexOf('/');
-  const dir = imagePath.slice(0, lastSlashIndex);
-  const filename = imagePath.slice(lastSlashIndex + 1);
-  const filenameWebp = filename.replace(/\.[^/.]+$/, '.webp');
-  return `${dir}/thumbnails/${filenameWebp}`;
-}
-
-function createImageCard(img) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'image-card';
-  const imagePath = "images/" + img.path.replace(/\\/g, '/');
-  const tPath = getThumbnailPath(imagePath);
-
-  wrapper.innerHTML = `
-    <a href="${imagePath}" target="_blank">
-      <img loading="lazy" src="${tPath}" alt="Image">
-    </a>
-    <div class="meta" onclick="openLightbox('${imagePath}')">
-      <div><strong>Date:</strong> ${img.timestamp ? new Date(img.timestamp * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown'}</div>
-      <div><strong>Satellite:</strong> ${img.satellite}</div>
-      <div><strong>Composite:</strong> ${img.compositeDisplay}</div>
-      <div><strong>Height:</strong> ${img.vPixels}px</div>
-    </div>
-  `;
-  wrapper.classList.add('collapsed');
-  return wrapper;
+function getThumbnailPath(relPath) {
+  const dot = relPath.lastIndexOf('.');
+  const webp = dot >= 0 ? relPath.slice(0, dot) + '.webp' : relPath + '.webp';
+  return 'thumbnails/' + webp.replace(/\\/g, '/'); 
 }
 
 function openLightbox(src) {

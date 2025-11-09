@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OnlySats Gallery</title>
+  <link rel="stylesheet" href="css/gallery.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <a href="../">Back</a>
+    <div class="mode-toggle" style="display: inline-block; margin-top: 8px; width: 50%; text-align: right;">
+      <label class="switch">
+        <input type="checkbox" id="simplifiedMode" {{if .Simplified}}checked{{end}}>
+        <span class="slider round"></span>
+      </label>
+      <span>Simple View</span>
+    </div>
+
+    <div class="menu-dropdown">
+      <button class="menu-dropbtn">☰</button>
+      <div class="menu-dropdown-content">
+        <a href="about">This Station</a>
+        <a href="does-not-exist">Data Archive</a>
+        <a href="login">Log In</a>
+        <a href="logout">Log Out</a>
+        <a href="local/admin">Admin Panel</a>
+        <a href="local/satdump">Satdump</a>
+        <a href="local/stats">System</a>
+      </div>
+    </div>
+  </div>
+  <br>
+
+  {{if .Simplified}}
+    {{template "simplified" .}}
+  {{else}}
+    {{template "advanced" .}}
+  {{end}}
+
+  <script>
+    // Injected initial state
+    const isSimplified = {{if .Simplified}}true{{else}}false{{end}};
+    // This is already JSON (safe), so we output without quotes
+    const initialData = {{.InitialDataJS}};
+
+    // Toggle behavior — mirrors your original logic
+    document.getElementById('simplifiedMode').addEventListener('change', function() {
+      const newMode = this.checked ? 'simple' : 'advanced';
+      window.location.href = `gallery?mode=${newMode}`;
+    });
+  </script>
+
+  {{if eq .Mode "advanced"}}
+    <script src="js/advanced-view.js" defer></script>
+  {{else}}
+    <script src="js/simplified-view.js" defer></script>
+  {{end}}
+  <script src="js/shared-view.js" defer></script>
+</body>
+</html>

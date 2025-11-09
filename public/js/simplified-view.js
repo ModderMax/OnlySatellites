@@ -3,6 +3,54 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('collapseAll')?.addEventListener('change', collapseAll);
 });
 
+window.addEventListener('load', async () => {
+  try {
+    const res = await fetch('api/update', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.updated) {
+      console.log('New data received, reloading images...');
+      await loadImages();
+    } else {
+      console.log('No update needed.');
+    }
+  } catch (err) {
+    console.warn('Update failed or on cooldown.', err);
+  }
+}); 
+
+function createImageCard(img, pass) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'image-card';
+  const imagePath = "images/" + img.path.replace(/\\/g, '/');
+  const tPath = getThumbnailPath(img.path);
+
+  wrapper.innerHTML = `
+    <a href="${imagePath}" target="_blank">
+      <img loading="lazy" src="${tPath}" alt="Image">
+    </a>
+    <div class="meta" onclick="openLightbox('${imagePath}')">
+      <div><strong>Date:</strong> ${pass.timestamp ? new Date(pass.timestamp * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Unknown'}</div>
+      <div><strong>Satellite:</strong> ${pass.satellite}</div>
+      <div><strong>Sensor:</strong> ${img.sensor}</div>
+      <div><strong>Composite:</strong> ${img.composite}</div>
+      <div><strong>Height:</strong> ${img.vPixels}px</div>
+    </div>
+  `;
+  wrapper.classList.add('collapsed');
+  return wrapper;
+}
+
+function groupImagesBySensor(images) {
+  const map = new Map();
+  for (const img of images || []) {
+    const sensor = (img && img.sensor) ? img.sensor : 'Unknown Sensor';
+    if (!map.has(sensor)) map.set(sensor, []);
+    map.get(sensor).push(img);
+  }
+  return map;
+}
+
 function renderSimplifiedImages(passes) {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = '';
@@ -14,13 +62,15 @@ function renderSimplifiedImages(passes) {
     const passId = `pass-${index}`;
     const wrapper = document.createElement('div');
     wrapper.className = 'pass-section';
+    const parts = pass.rawDataPath.split(".");
+    const dataExt = parts.pop(); 
 
-    const exportLink = pass.rawDataPath && pass.rawDataPath !== '0.0'
-      ? `<a href="/api/export?path=${encodeURIComponent("live_output/" + pass.name + "/" + pass.rawDataPath)}" download class="export-raw" title="Download raw data">⭳</a>`
+    const exportLink = (pass.rawDataPath && pass.rawDataPath !== 'NOT_CONFIGURED')
+      ? `<a href="/api/export?path=${encodeURIComponent(pass.name + "/" + pass.rawDataPath)}" download class="export-raw" title="Download raw data"><b>.${dataExt}</b></a>`
       : '';
 
     const zipLink = pass.name
-      ? `<a href="/api/zip?path=${encodeURIComponent('live_output/' + pass.name)}" class="export-zip" title="Download full pass as .zip">🗀</a>`
+      ? `<a href="/api/zip?path=${encodeURIComponent(pass.name)}" class="export-zip" title="Download full pass as .zip"><b>.zip</b></a>`
       : '';
 
     wrapper.innerHTML = `
@@ -36,11 +86,31 @@ function renderSimplifiedImages(passes) {
     `;
 
     const passImagesContainer = wrapper.querySelector(`#${passId}`);
-    if (Array.isArray(pass.images)) {
-      pass.images.forEach(img => {
-        passImagesContainer.appendChild(createImageCard(img));
-      });
-    }
+    if (Array.isArray(pass.images) && passImagesContainer) {
+  const bySensor = groupImagesBySensor(pass.images);
+  const sensorNames = Array.from(bySensor.keys()).sort((a, b) => a.localeCompare(b)); // A→Z
+
+  sensorNames.forEach(sensorName => {
+    const block = document.createElement('div');
+    block.className = 'sensor-block';
+
+    // Title (NOT collapsible)
+    const title = document.createElement('div');
+    title.className = 'sensor-title';
+    title.textContent = sensorName;
+
+    const container = document.createElement('div');
+    container.className = 'sensor-images';
+
+    (bySensor.get(sensorName) || []).forEach(img => {
+      container.appendChild(createImageCard(img, pass));
+    });
+
+    block.appendChild(title);
+    block.appendChild(container);
+    passImagesContainer.appendChild(block);
+  });
+}
 
     if (index === 0) {
       passImagesContainer.style.display = 'flex';

@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Load text
-  fetch('/api/about')
+  fetch('../api/about')
     .then(res => res.text())
     .then(text => {
       document.getElementById('text-panel').textContent = text;
@@ -11,14 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   // Load images
-  fetch('/api/userImages')
+  fetch('../api/userImages')
     .then(res => res.json())
     .then(images => {
       const gallery = document.getElementById('image-gallery');
       gallery.innerHTML = '';
       images.forEach(file => {
         const img = document.createElement('img');
-        img.src = `/userContent/${file}`;
+        img.src = `../userContent/${file}`;
         img.alt = file;
         img.className = 'gallery-img';
         gallery.appendChild(img);
