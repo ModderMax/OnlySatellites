@@ -1,35 +1,19 @@
 # OnlySatellites Station Client
 
-
-
-
-### Requirements
-
-This program relies on h2non/bimg package, and will need the following libraries:
-Windows: gcc, libvips, libglib
-
 ## Building and Running
-
-### Prerequisites
-
-1. **Go 1.21 or later**
-2. **GCC compiler** (for CGO dependencies)
-3. **SQLite development libraries**
 
 ### Building
 
 Dependencies: 
-Golang compiler is required for building.
-   Windows Run: 
-   Windows build: mingw, gcc, libvips, 
+Golang 1.21 or later is required for building.
+   Windows Run: libvips, libglib
+   Windows build: mingw, gcc, libvips, libglib
    Linux build and run: vips
       `sudo apt install libvips libvips-dev`
 
 ### Configuration Files
 
 - **`config.toml`**: Main application configuration file
-
-### Configuration Structure
 
 The TOML configuration includes:
 
@@ -70,9 +54,6 @@ max_age = 28
 compress = true
 ```
 
-### Configuration Management
-
-
 
 ## Troubleshooting
 
@@ -82,13 +63,3 @@ compress = true
 2. **Database Locked**: Check for other processes using the database
 3. **Permission Errors**: Ensure write permissions for data directories
 4. **Memory Issues**: Reduce batch size or worker count for large datasets
-
-### Debug Mode
-
-The application automatically logs all operations. For detailed output, check the log file specified in `config.toml`:
-
-```toml
-[logging]
-level = "debug"  # Change from "info" to "debug" for verbose logging
-file = "logs/app.log"
-```
