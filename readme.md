@@ -1,5 +1,22 @@
 # OnlySatellites Station Client
 
+![OnlySats](./public/image/OnlySats_Logo.png "")
+
+OnlySats is a website hosting app for satellite images captured by SatDump, with many integrated features for managing your ground station or server. 
+<br><b>Current public features include:</b><br>
+Image gallery with sorting, filtering, Collapsible passes, and thumbnails for reduced network usage<br>
+Message board for announcements and alerts<br>
+About page for the station<br>
+<b>And features for the admin(s), including:</b>
+Configuration for satellites and passes<br>
+Aliasing for composite names and custom color schemes<br>
+Webpage rate limiting<br>
+Proxying Satdump's http server for embedded viewing<br>
+Server hardware monitoring<br>
+Manage users and privilages<br><br>
+And much more to come
+
+
 ## Building and Running
 
 ### Building

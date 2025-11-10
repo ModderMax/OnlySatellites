@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>OnlySatDump</title>
+  <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
   <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
@@ -121,11 +122,16 @@
                   const res = await fetch('/local/satdump/live');
                   if (!res.ok) return;
                   const data = await res.json();
-                  const snr = data?.live_pipeline?.psk_demod?.snr ?? null;
-                  if (snr !== null) {
-                    chart.data.datasets[0].data.push({ x: Date.now(), y: snr });
-                    jsonBox.textContent = JSON.stringify(data, null, 2);
+                  let snr = null;
+                  if (data?.live_pipeline?.psk_demod?.snr !== null) {
+                    snr = data?.live_pipeline?.psk_demod?.snr;
+                  } else if (data?.psk_demod?.snr !== null) {
+                    snr = data?.psk_demod?.snr;
+                  } else {
+                    snr = 0;
                   }
+                  chart.data.datasets[0].data.push({ x: Date.now(), y: snr });
+                  jsonBox.textContent = JSON.stringify(data, null, 2);
                 } catch (e) {
                   console.error(e);
                 }
