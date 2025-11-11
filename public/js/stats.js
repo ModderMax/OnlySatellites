@@ -13,23 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refresh-pins').addEventListener('click', refreshPinnedValues);
 
   // Fetch system stats and determine the host IP dynamically
-  fetch('../api/stats')
+  fetch('../local/api/info')
     .then(res => res.json())
     .then(data => {
-      const { systemUptime, serverUptime, osInfo, ipv4Addresses, memoryUsage } = data;
+      const { system_uptime_sec, app_uptime_sec, app_cpu_percent, app_mem } = data;
 
       // Set iframe source dynamically
       //hmFrame.src = `http://${hostIp}:8085`;
 
       const entries = [
-        { label: 'System Uptime', value: systemUptime },
-        { label: 'Server Uptime', value: serverUptime },
-        { label: 'Operating System', value: osInfo },
-        { label: 'IPv4 Addresses', value: ipv4Addresses.join(', ') },
-        { label: 'Memory - RSS', value: formatBytes(memoryUsage.rss) },
-        { label: 'Memory - Heap Used', value: formatBytes(memoryUsage.heapUsed) },
-        { label: 'Memory - Heap Total', value: formatBytes(memoryUsage.heapTotal) },
-        { label: 'Memory - External', value: formatBytes(memoryUsage.external) },
+        { label: 'System Uptime', value: convertSeconds(system_uptime_sec) },
+        { label: 'Server Uptime', value: convertSeconds(app_uptime_sec) },
+        { label: 'Server CPU', value: app_cpu_percent },
+        { label: 'Server Memory %', value: app_mem.memory_percent },
+        { label: 'Memory - RSS', value: formatBytes(app_mem.rss_bytes) },
+        { label: 'Memory - Heap Alloc', value: formatBytes(app_mem.go_heap_alloc_bytes) },
+        { label: 'Memory - Heap Sys', value: formatBytes(app_mem.go_heap_sys_bytes) },
+        { label: 'Memory - Stack', value: formatBytes(app_mem.go_stack_inuse_bytes) },
+        { label: 'Memory - Routines (Threads)', value: app_mem.go_goroutines },
+        { label: 'Memory - Last Garbage collection:', value: app_mem.go_last_gc_unix_sec }
       ];
 
       entries.forEach(({ label, value }) => {
@@ -58,8 +60,22 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${bytes.toFixed(1)} ${units[i]}`;
   }
 
+  function convertSeconds(totalSeconds) {
+  const days = Math.floor(totalSeconds / (24 * 3600)); // Calculate days
+  totalSeconds %= (24 * 3600); // Remaining seconds after extracting days
+
+  const hours = Math.floor(totalSeconds / 3600); // Calculate hours
+  totalSeconds %= 3600; // Remaining seconds after extracting hours
+
+  const minutes = Math.floor(totalSeconds / 60); // Calculate minutes
+  const seconds = totalSeconds % 60; // Remaining seconds
+  const string = `${days}d ${hours}h ${minutes}m ${seconds}s`
+
+  return string;
+}
+
   function refreshPinnedValues() {
-    fetch('../api/hm/stats')
+    fetch('../local/api/hardware')
     .then(res => res.json())
     .then(data => {
       hmStats = data; // Update global stats list
@@ -90,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
   // Fetch and process hm stats
-  fetch('../api/hm/stats')
+  fetch('../local/api/hardware')
   .then(res => res.json())
   .then(hmData => {
     console.log("hm Data:", hmData);
@@ -189,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pinned = getPinnedFromStorage();
     if (pinned.length === 0) return;
   
-    fetch('/api/hm/stats')
+    fetch('../local/api/hardware')
       .then(res => res.json())
       .then(data => {
         pinnedList.innerHTML = '';
@@ -212,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchBox.addEventListener('input', function (event) {
     const query = event.target.value.toLowerCase();
   
-    fetch('../api/hm/stats')
+    fetch('../local/api/hardware')
       .then(res => res.json())
       .then(data => {
         const filtered = data.filter(sensor =>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Message</title>
+<link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
+<link rel="stylesheet" href="../css/colors.css" />
+<link rel="stylesheet" href="../css/home.css" />
+<style>
+body { background: var(--bg, #0f1115); color: var(--text, #eaeef5); font-family: system-ui, Segoe UI, Roboto, sans-serif; }
+.container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+.back { margin: 12px 0 18px; display:inline-block; color: var(--text); opacity:.8; text-decoration:none; }
+@media only screen and (max-width: 525px) {
+    .msg {
+        width: 100%;
+        display: inline-block;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<a class="back" href="/">← Back</a>
+<section id="messageStandalone"></section>
+</div>
+<script src="../js/message_viewer.js"></script>
+<script>
+(function(){
+const m = location.pathname.match(/\/messages\/(\d+)/);
+if (m) window.MessageViewer.renderStandalone('#messageStandalone', Number(m[1]));
+})();
+</script>
+</body>
+</html>

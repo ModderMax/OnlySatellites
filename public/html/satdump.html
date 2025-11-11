@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OnlySatDump</title>
+  <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0/dist/chartjs-plugin-streaming.min.js"></script>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../../colors.css">
+  <base href="/local/satdump/">
+  <style>
+    .tabs { display:flex; gap:.5rem; margin:.5rem 0 1rem; flex-wrap:wrap; }
+    .tab { padding:.35rem .7rem; border:1px solid #555; border-radius:.5rem; cursor:pointer; background:var(--bg-light); color: var(--text); }
+    .tab.active { background:var(--bg-dark); color:var(--text); }
+    .muted { opacity:.7; }
+  </style>
+</head>
+<body>
+  <h1>{{.Title}}</h1>
+
+  <!-- Tabs -->
+  <div id="tabbar" class="tabs"></div>
+  <div id="empty-state" class="muted" style="display:none;">No SatDump instances. Add one in Admin → Satdump instances.</div>
+
+  <section>
+    <h2>Status</h2>
+    <div id="status-container">{{.StatusHTML}}</div>
+  </section>
+
+  <div class="status-section">
+    <h2>📈 Deh Chart</h2>
+    <canvas id="snrChart" height="120"></canvas>
+  </div>
+
+  <section>
+    <h2>Live JSON</h2>
+    <pre id="json-box">{{.ApiDataJSON}}</pre>
+  </section>
+
+  <script>
+    const SATDUMP_RATE_MS = Number({{.SatdumpRateMS}}) || 500;
+    const SATDUMP_SPAN_MS = Number({{.SatdumpSpanMS}}) || 300000;
+    // --- instance helpers (derive current from URL) ---
+    function currentInstanceFromPath() {
+      const m = location.pathname.match(/\/local\/satdump\/([^\/]+)/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+    let current = currentInstanceFromPath();
+
+    // --- tabs: fetch names and render ---
+    const tabbar = document.getElementById('tabbar');
+    const emptyState = document.getElementById('empty-state');
+
+    async function getSatdumpList() {
+      try {
+        const r = await fetch('/local/api/satdump', { credentials: 'include' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const list = await r.json();
+        return Array.isArray(list) ? list.sort((a,b)=>String(a.name).localeCompare(String(b.name))) : [];
+      } catch (e) {
+        console.error('Failed to load instances:', e);
+        return [];
+      }
+    }
+
+    function renderTabs(list) {
+      tabbar.innerHTML = '';
+      if (!list.length) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+      for (const sd of list) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tab' + (sd.name === current ? ' active' : '');
+        btn.textContent = sd.name || '(unnamed)';
+        btn.addEventListener('click', () => {
+          if (sd.name !== current) {
+            // Navigating to /local/satdump/{name} sets the active-instance cookie server-side
+            location.assign('/local/satdump/' + encodeURIComponent(sd.name));
+          }
+        });
+        tabbar.appendChild(btn);
+      }
+    }
+
+    // --- live chart + periodic status refresh, using COOKIE-SCOPED endpoints ---
+    const jsonBox = document.getElementById('json-box');
+    const statusEl = document.getElementById('status-container');
+
+    async function updateStatusHtml() {
+    try {
+      const res = await fetch('/local/satdump/html', { credentials: 'include' });
+      if (!res.ok) throw new Error('status HTTP ' + res.status);
+      const html = await res.text();
+      statusEl.innerHTML = html;
+    } catch (err) {
+      console.error('Error updating status HTML:', err);
+    }
+  }
+
+    const ctx = document.getElementById('snrChart').getContext('2d');
+    const snrChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: 'SNR (dB)', data: [] }] },
+      options: {
+        animation: false,
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: {
+          x: {
+            type: 'realtime',
+            realtime: {
+              duration: SATDUMP_SPAN_MS,
+              refresh: SATDUMP_RATE_MS,
+              delay: 2000,
+              onRefresh: async chart => {
+                try {
+                  const res = await fetch('/local/satdump/live');
+                  if (!res.ok) return;
+                  const data = await res.json();
+                  let snr = null;
+                  if (data?.live_pipeline?.psk_demod?.snr !== null) {
+                    snr = data?.live_pipeline?.psk_demod?.snr;
+                  } else if (data?.psk_demod?.snr !== null) {
+                    snr = data?.psk_demod?.snr;
+                  } else {
+                    snr = 0;
+                  }
+                  chart.data.datasets[0].data.push({ x: Date.now(), y: snr });
+                  jsonBox.textContent = JSON.stringify(data, null, 2);
+                } catch (e) {
+                  console.error(e);
+                }
+              }
+            }
+          },
+          y: { beginAtZero: true, title: { display: true, text: 'SNR (dB)' } }
+        }
+      }
+    });
+
+    // boot
+    (async function init() {
+    const list = await getSatdumpList();
+    renderTabs(list);
+    await updateStatusHtml();
+    setInterval(updateStatusHtml, 5000);
+  })();
+  </script>
+</body>
+</html>

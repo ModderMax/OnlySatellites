@@ -1,0 +1,42 @@
+:root{--bg:#0f1115;--panel:#151923;--muted:#8a8fa3;--txt:#e6e9f2;--brite:#7aa2ff;--ok:#3cc486;--warn:#ffb661;--err:#ff6b6b;--border:#202633}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+.page-header{padding:20px 24px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(122,162,255,0.08),rgba(0,0,0,0))}
+.page-header h1{margin:0 0 6px 0}
+.page-header .muted{color:var(--muted)}
+.container{padding:24px;max-width:1200px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.span-2{grid-column:span 2}
+.align-end{display:flex;align-items:end;justify-content:flex-end}
+.list{list-style:none;margin:0;padding:0}
+.btn{appearance:none;border:1px solid var(--border);background:#1a2030;color:var(--txt);padding:8px 12px;border-radius:10px;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn.primary{border-color:var(--brite);color:var(--brite)}
+.btn.success{border-color:var(--ok);color:var(--ok)}
+.btn.danger{border-color:var(--err);color:var(--err)}
+.muted{color:var(--muted)}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center}
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:6px}
+.form-inline{display:flex;gap:10px;margin:10px 0}
+.hidden{display:none}
+.toast{position:fixed;bottom:18px;right:18px;background:#0b0e14;border:1px solid var(--border);padding:10px 12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.toast.ok{border-color:var(--ok);color:var(--ok)}
+.toast.err{border-color:var(--err);color:var(--err)}
+
+/* Template card */
+.template{display:grid;gap:14px}
+.template-head{display:flex;align-items:center;justify-content:space-between}
+.template-head .title{display:flex;gap:10px;align-items:center}
+code{background:#0b0e14;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+
+/* Directories */
+.dir{border:1px dashed var(--border);border-radius:12px;padding:10px;margin:8px 0}
+.dir-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dir-title{display:flex;gap:8px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:12px}
+.rule-add{display:flex;gap:10px;align-items:end;margin-top:8px}
+.rule-add select,.rule-add input{min-width:180px}

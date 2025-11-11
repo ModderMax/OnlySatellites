@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About Page Editor</title>
+  <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121821;
+      --muted: #2a3443;
+      --text: #ecf1f8;
+      --text-dim: #b7c0cc;
+      --accent: #6aa5ff;
+      --danger: #ff6b6b;
+      --ok: #66d38b;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+    h1 { margin: 0 0 12px; font-size: 22px; }
+    h2 { margin: 18px 0 8px; font-size: 16px; color: var(--text-dim); font-weight: 600; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 1100px) {
+      .grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
+    }
+
+    .card { background: var(--panel); border: 1px solid var(--muted); border-radius: 16px; padding: 16px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .row > * { flex: 1 1 auto; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    textarea, input[type="text"], input[type="number"], select { width: 100%; box-sizing: border-box; background: #0e131b; color: var(--text); border: 1px solid var(--muted); border-radius: 12px; padding: 10px 12px; outline: none; }
+    textarea { min-height: 240px; resize: vertical; }
+
+    button { appearance: none; border: 1px solid var(--muted); background: #0f1520; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; }
+    button.primary { background: var(--accent); color: #031226; border-color: transparent; }
+    button.ghost { background: transparent; }
+    button.danger { background: #211314; border-color: #3a1d20; color: #ffb4b4; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+
+    .muted { color: var(--text-dim); font-size: 12px; }
+    .sep { height: 1px; background: var(--muted); margin: 12px 0; border-radius: 1px; }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--muted); border-radius: 14px; padding: 22px; text-align: center; background: #0d1219;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .dropzone.drag { border-color: var(--accent); background: #0b1426; }
+    .dropzone input[type="file"] { display: none; }
+
+    .image-list { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+    @media (min-width: 720px) {
+      .image-list { grid-template-columns: repeat(2, 1fr); }
+    }
+    .image-item { border: 1px solid var(--muted); border-radius: 12px; overflow: hidden; background: #0c1118; }
+    .image-item .thumb { aspect-ratio: 16/9; width: 100%; object-fit: cover; background: #0a0f15; display: block; }
+    .image-item .meta { padding: 10px; display: grid; grid-template-columns: 1fr 110px; gap: 8px; align-items: center; }
+    .image-item .row2 { grid-column: 1 / -1; display: flex; gap: 8px; }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--muted); color: var(--text-dim); }
+    .status { font-size: 12px; }
+
+    .social-row { display: grid; grid-template-columns: 170px 1fr auto; gap: 8px; align-items: center; }
+    .social-row .remove { color: var(--danger); }
+
+    .toast { position: fixed; right: 16px; bottom: 16px; background: #0e1623; border: 1px solid var(--muted); color: var(--text); padding: 12px 14px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); min-width: 240px; opacity: 0; transform: translateY(10px); transition: all .25s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.ok { border-color: #214a33; }
+    .toast.err { border-color: #553739; }
+  </style>
+</head>
+<body>
+  <h1>About Page Editor</h1>
+  <div class="grid">
+
+    <!-- Left: Body + Images -->
+    <div class="col">
+      <!-- Body -->
+      <div class="card">
+        <h2>Body</h2>
+        <textarea id="aboutBody" placeholder="Type the About content here..."></textarea>
+        <div class="row" style="margin-top:10px; justify-content: space-between;">
+          <div class="muted" id="bodyUpdated">Loaded • —</div>
+          <div class="actions">
+            <button id="btnRevertBody" class="ghost">Revert</button>
+            <button id="btnSaveBody" class="primary">Save Body</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="card">
+        <h2>Images</h2>
+        <div id="dropzone" class="dropzone">
+          <p><strong>Drag & drop</strong> images here, or <button id="btnBrowse" class="ghost" type="button">browse</button></p>
+          <p class="muted">JPEG/PNG up to 10 MB. EXIF will be stripped server-side.</p>
+          <input id="fileInput" type="file" accept="image/*" multiple>
+        </div>
+        <div id="uploadStatus" class="status muted"></div>
+        <div class="sep"></div>
+        <div class="row" style="justify-content: space-between; align-items: baseline;">
+          <div class="muted">Existing</div>
+          <div class="actions">
+            <button id="btnSaveImages" class="primary">Save Image Changes</button>
+          </div>
+        </div>
+        <div id="imageList" class="image-list"></div>
+      </div>
+    </div>
+
+    <!-- Right: Metadata -->
+    <div class="col">
+      <div class="card">
+        <h2>Metadata</h2>
+        <div class="row">
+          <div>
+            <label class="muted">Country</label>
+            <select id="countrySelect"><option value="">Loading countries…</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label class="muted">Latitude</label>
+            <input id="latInput" type="number" placeholder="e.g., 40.7128" step="any" />
+          </div>
+          <div>
+            <label class="muted">Longitude</label>
+            <input id="lonInput" type="number" placeholder="e.g., -74.0060" step="any" />
+          </div>
+        </div>
+        <div class="sep"></div>
+
+        <div class="row" style="justify-content: space-between; align-items: baseline;">
+          <div class="muted">Social Links</div>
+          <div class="actions">
+            <button id="btnAddSocial" class="ghost">Add social</button>
+          </div>
+        </div>
+        <div id="socials" style="display: grid; gap: 8px;"></div>
+
+        <div class="sep"></div>
+        <div class="actions" style="justify-content: flex-end;">
+          <button id="btnSaveMeta" class="primary">Save Metadata</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast" class="toast">Saved</div>
+
+<script>
+// --- Config ---
+const API = {
+  GET_ALL: 'api/about',
+  PUT_BODY: 'local/api/about/body',
+  LIST_IMAGES: 'api/about/images',
+  UPLOAD_IMAGE: 'local/api/about/images/upload', // new upload endpoint (multipart)
+  UPDATE_IMAGE: (id) => `local/api/about/images/${id}`,
+  DELETE_IMAGE: (id) => `local/api/about/images/${id}`,
+  PUT_META: (key) => `local/api/about/meta/${encodeURIComponent(key)}`,
+  DELETE_META: (key) => `local/api/about/meta/${encodeURIComponent(key)}`,
+};
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+const SOCIAL_OPTIONS = [
+  {key:'github', label:'GitHub'},
+  {key:'twitter', label:'Twitter'},
+  {key:'reddit', label:'Reddit'},
+  {key:'instagram', label:'Instagram'},
+];
+
+// --- Helpers ---
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+function toast(msg, ok=true) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = 'toast show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => t.className = 'toast', 2600);
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  return d.toLocaleString();
+}
+
+// --- Body ---
+let loadedBody = '';
+async function loadAll() {
+  try {
+    const res = await fetch(API.GET_ALL, {credentials:'include'});
+    if (!res.ok) throw new Error('load failed');
+    const data = await res.json();
+
+    // Body
+    loadedBody = data.body || '';
+    $('#aboutBody').value = loadedBody;
+    $('#bodyUpdated').textContent = `Loaded • ${fmtTime(data.updated)}`;
+
+    // Images
+    renderImages(data.images || []);
+
+    // Meta
+    await loadCountries();
+    applyMeta(data.meta || {});
+  } catch (e) {
+    toast('Failed to load About data', false);
+    console.error(e);
+  }
+}
+
+$('#btnRevertBody').addEventListener('click', () => {
+  $('#aboutBody').value = loadedBody;
+});
+$('#btnSaveBody').addEventListener('click', async () => {
+  const body = $('#aboutBody').value;
+  try {
+    const res = await fetch(API.PUT_BODY, {
+      method: 'PUT', credentials: 'include',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({body})
+    });
+    if (!res.ok) throw new Error();
+    toast('Body saved');
+  } catch (e) {
+    toast('Failed to save body', false);
+  }
+});
+
+// --- Countries (restcountries) ---
+async function loadCountries() {
+  const sel = $('#countrySelect');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  try {
+    const res = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+    const list = await res.json();
+    const options = list.map(c => ({ code: c.cca2, name: c?.name?.common || c.cca2 }))
+                        .sort((a,b)=> a.name.localeCompare(b.name));
+    sel.innerHTML = '<option value="">— Select country —</option>' +
+      options.map(o => `<option value="${o.code}">${o.name}</option>`).join('');
+  } catch (e) {
+    sel.innerHTML = '<option value="">(Failed to load countries)</option>';
+  }
+}
+
+function applyMeta(meta) {
+  // Country
+  if (meta.country) $('#countrySelect').value = meta.country;
+  // Lat/Lon
+  if (meta.lat != null) $('#latInput').value = meta.lat;
+  if (meta.lon != null) $('#lonInput').value = meta.lon;
+
+  // Socials
+  const socials = $('#socials');
+  socials.innerHTML = '';
+  for (const opt of SOCIAL_OPTIONS) {
+    const val = meta[opt.key];
+    if (val) addSocialRow(opt.key, val);
+  }
+}
+
+function addSocialRow(initialKey='', initialVal='') {
+  const wrap = document.createElement('div');
+  wrap.className = 'social-row';
+  wrap.innerHTML = `
+    <select class="social-key">
+      <option value="">Select…</option>
+      ${SOCIAL_OPTIONS.map(o=> `<option value="${o.key}">${o.label}</option>`).join('')}
+    </select>
+    <input class="social-val" type="text" placeholder="Enter URL or handle" />
+    <button type="button" class="remove ghost">Remove</button>
+  `;
+  $('#socials').appendChild(wrap);
+  if (initialKey) $('select', wrap).value = initialKey;
+  if (initialVal) $('.social-val', wrap).value = initialVal;
+  $('.remove', wrap).addEventListener('click', ()=> wrap.remove());
+}
+$('#btnAddSocial').addEventListener('click', ()=> addSocialRow());
+
+$('#btnSaveMeta').addEventListener('click', async () => {
+  const jobs = [];
+  // Country
+  const country = $('#countrySelect').value.trim();
+  jobs.push(saveMetaKey('country', country));
+  // Lat/Lon
+  const lat = $('#latInput').value.trim();
+  const lon = $('#lonInput').value.trim();
+  jobs.push(saveMetaKey('lat', lat));
+  jobs.push(saveMetaKey('lon', lon));
+  // Socials (dedupe by last occurrence wins)
+  const rows = $$('.social-row');
+  const latest = new Map();
+  for (const row of rows) {
+    const k = $('.social-key', row).value.trim();
+    const v = $('.social-val', row).value.trim();
+    if (!k) continue; latest.set(k, v);
+  }
+  for (const {key} of SOCIAL_OPTIONS) {
+    const v = latest.get(key) || '';
+    jobs.push(saveMetaKey(key, v));
+  }
+  try {
+    await Promise.all(jobs);
+    toast('Metadata saved');
+  } catch (e) {
+    toast('Failed to save metadata', false);
+  }
+});
+
+async function saveMetaKey(key, value) {
+  if (value === '') {
+    // delete
+    const res = await fetch(API.DELETE_META(key), { method: 'DELETE', credentials:'include' });
+    if (!res.ok) throw new Error('delete meta failed: ' + key);
+  } else {
+    const res = await fetch(API.PUT_META(key), {
+      method: 'PUT', credentials:'include',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({value})
+    });
+    if (!res.ok) throw new Error('put meta failed: ' + key);
+  }
+}
+
+// --- Images ---
+function renderImages(list) {
+  const root = $('#imageList');
+  root.innerHTML = '';
+  for (const img of list) {
+    const item = document.createElement('div');
+    item.className = 'image-item';
+    item.dataset.id = img.id;
+    item.innerHTML = `
+      <img class="thumb" alt="" src="../${img.path}" />
+      <div class="meta">
+        <input type="text" class="caption" placeholder="Caption" value="${(img.caption||'').replace(/"/g,'&quot;')}">
+        <input type="number" class="sort" placeholder="Sort" value="${img.sort ?? ''}">
+        <div class="row2">
+          <span class="pill">ID: ${img.id}</span>
+          <div style="flex:1"></div>
+          <button type="button" class="danger btnDelete">Delete</button>
+        </div>
+      </div>
+    `;
+    $('.btnDelete', item).addEventListener('click', async ()=> {
+      if (!confirm('Delete this image?')) return;
+      try {
+        const res = await fetch(API.DELETE_IMAGE(img.id), { method:'DELETE', credentials:'include' });
+        if (!res.ok) throw new Error();
+        item.remove(); toast('Image deleted');
+      } catch (e) { toast('Delete failed', false); }
+    });
+    root.appendChild(item);
+  }
+}
+
+$('#btnSaveImages').addEventListener('click', async () => {
+  const rows = $$('.image-item');
+  try {
+    await Promise.all(rows.map(async row => {
+      const id = row.dataset.id;
+      const caption = $('.caption', row).value;
+      const sortStr = $('.sort', row).value.trim();
+      const payload = {};
+      if (caption !== undefined) payload.caption = caption;
+      if (sortStr !== '') payload.sort = Number(sortStr);
+      const res = await fetch(API.UPDATE_IMAGE(id), {
+        method: 'PUT', credentials:'include',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('update image ' + id + ' failed');
+    }));
+    toast('Images updated');
+  } catch (e) {
+    console.error(e);
+    toast('Failed to update images', false);
+  }
+});
+
+// Uploads
+const dz = $('#dropzone');
+const fi = $('#fileInput');
+$('#btnBrowse').addEventListener('click', ()=> fi.click());
+['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e=> { e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e=> { e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e => {
+  const files = [...e.dataTransfer.files];
+  handleFiles(files);
+});
+fi.addEventListener('change', e => handleFiles([...fi.files]));
+
+async function handleFiles(files) {
+  if (!files.length) return;
+  const toUpload = files.filter(f => /image\//.test(f.type));
+  const tooBig = toUpload.filter(f => f.size > MAX_IMAGE_BYTES);
+  if (tooBig.length) {
+    toast(`Some files exceed 10 MB: ${tooBig.map(f=>f.name).join(', ')}`, false);
+  }
+  for (const f of toUpload) {
+    if (f.size > MAX_IMAGE_BYTES) continue;
+    await uploadOne(f);
+  }
+  // refresh list
+  try {
+    const res = await fetch(API.LIST_IMAGES, {credentials:'include'});
+    if (res.ok) renderImages(await res.json());
+  } catch {}
+}
+
+async function uploadOne(file) {
+  $('#uploadStatus').textContent = `Uploading ${file.name}…`;
+  const fd = new FormData();
+  fd.append('image', file, file.name);
+  try {
+    const res = await fetch(API.UPLOAD_IMAGE, {
+      method: 'POST', body: fd, credentials: 'include'
+    });
+    if (!res.ok) throw new Error();
+    $('#uploadStatus').textContent = `Uploaded ${file.name}`;
+  } catch (e) {
+    $('#uploadStatus').textContent = `Failed: ${file.name}`;
+    toast('Upload failed: ' + file.name, false);
+  }
+}
+
+// Init
+loadAll();
+</script>
+</body>
+</html>

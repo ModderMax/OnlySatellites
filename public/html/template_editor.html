@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configure Passes</title>
+  <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
+  <link rel="stylesheet" href="../css/template_editor.css" />
+</head>
+<body>
+  <header class="page-header">
+    <h1>Pass Templates</h1>
+  </header>
+  <main class="container">
+    <section class="card" id="addTemplateCard">
+      <div class="card-head">
+        <h2>Add Template</h2>
+      </div>
+      <div class="form grid-3">
+        <label>Filename contains
+          <input id="tplPrefix" type="text" placeholder="string from folder name" />
+        </label>
+        <label>Pass type code
+          <input id="tplCode" type="text" placeholder="Name" />
+        </label>
+        <label>Downlink
+          <input type="text" id="tplDownlink"></input>
+        </label>
+        <label class="span-2">Data Files
+          <input id="tplDataset" type="text" placeholder="Dataset (.json)" />
+          <input id="tplRawdata" type="text" placeholder="Raw (.cadu, .raw16, .soft)" />
+        </label>
+        <div class="actions align-end">
+          <button id="createTemplateBtn" class="btn success">Create Template</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Templates Grid -->
+    <section class="grid" id="templatesGrid">
+      <!-- cards inserted here by JS -->
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="../js/template_editor.js"></script>
+</body>
+</html>

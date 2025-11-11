@@ -1,39 +1,352 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>OnlySats</title>
-  <link rel="stylesheet" href="css/home.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About</title>
+  <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
+  <!-- Markdown render + sanitize -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <style>
+:root {
+--bg:oklch(0.15 0.075 301);
+--bg-dark:oklch(0.1 0.075 301);
+--bg-light:oklch(0.2 0.075 301);
+--border:oklch(0.4 0.15 301);
+--border-muted:oklch(0.3 0.15 301);
+--danger:oklch(0.7 0.15 30);
+--highlight:oklch(0.5 0.15 301);
+--info:oklch(0.8 0.15 260);
+--primary:oklch(0.76 0.15 301);
+--secondary:oklch(.65 0.13 240);
+--success:oklch(0.7 0.15 160);
+--text:oklch(0.96 0.1 301);
+--text-muted:oklch(0.76 0.1 301);
+--warning:oklch(0.7 0.15 100)
+}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+
+    .wrap{max-width:1200px;margin:0 auto}
+
+    /* Two-column layout */
+    .grid{display:grid;grid-template-columns:3fr 1fr;gap:16px;align-items:start}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+
+    /* Left: markdown body */
+    .card{background:var(--panel);border:1px solid var(--primary);padding:20px;height:100%;}
+    .md{line-height:1.6}
+    .md h1,.md h2,.md h3{margin:1.2em 0 .6em}
+    .md p{margin:.8em 0}
+    .md a{color:var(--accent);text-decoration:none}
+    .md a:hover{text-decoration:underline}
+    .md code{background:var(--bg);border:1px solid #152033;border-radius:6px;padding:1px 6px}
+    .md pre{background:var(--bg);border:1px solid #152033;border-radius:10px;padding:12px;overflow:auto}
+
+    /* Right column split 60/40 of viewport height */
+    .right{display:grid;grid-template-rows:60vh 40vh;gap:16px}
+    @media (max-width: 900px){.right{grid-template-rows:auto auto}}
+
+    .hero{background:var(--panel);border:1px solid var(--muted);border-radius:16px;display:flex;flex-direction:column;min-height:220px}
+    .hero-img-wrap{position:relative;flex:1;min-height:0}
+    .hero-img{position:absolute;inset:10px;object-fit:contain;width:calc(100% - 20px);height:calc(100% - 20px);border-radius:12px;background:var(--bg-light)}
+    .hero-cap{padding:10px 14px;border-top:1px solid var(--muted);color:var(--sub);font-size:14px}
+
+    .meta{background:var(--panel);border:1px solid var(--muted);border-radius:16px;display:flex;flex-direction:column;min-height:180px;overflow:hidden}
+    .meta h3{margin:14px;color:var(--sub);font-size:14px;font-weight:600}
+    .meta-body{padding:0 14px 14px;overflow:auto}
+    .kv{display:grid;grid-template-columns:90px 1fr;gap:8px;padding:6px 0;border-top:1px dashed #1b2636}
+    .kv:first-child{border-top:none}
+    .country-flag{font-size:22px;margin-right:8px}
+
+    /* Socials */
+    .socials{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+    .soc{display:flex;align-items:center;gap:10px}
+    .soc svg{width:18px;height:18px;opacity:.9}
+    .soc a{color:var(--text);text-decoration:none}
+    .soc a:hover{text-decoration:underline}
+
+    /* Gallery */
+    .gallery{margin-top:18px;display:grid;grid-template-columns:repeat(3, 1fr);gap:12px}
+    @media (max-width: 1100px){.gallery{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width: 700px){.gallery{grid-template-columns:1fr}}
+    figure{margin:0;background:var(--panel);border:1px solid var(--muted);border-radius:12px;overflow:hidden}
+    figure img{width:100%;height:300px;object-fit:contain;background:var(--bg-light);display:block}
+    figure figcaption{padding:10px 12px;color:var(--sub);font-size:14px}
+body {
+background-color:var(--bg);
+font-family:sans-serif;
+margin:0;
+padding:0
+}
+h2 {
+margin:0
+}
+.navbar {
+background-color:var(--bg-light);
+overflow:hidden;
+width:100%
+}
+.navbar a {
+align-content:center;
+color:var(--text);
+float:left;
+font-size:17px;
+height:34px;
+overflow:hidden;
+padding:0;
+text-align:center;
+text-decoration:none;
+width:20%
+}
+.navbar a.active {
+background-color:var(--bg-dark);
+color:var(--text-muted)
+}
+@media screen and (max-width: 525px) {
+.navbar a {
+display:block;
+float:none;
+text-align:left;
+width:100%
+}
+}
+#container {
+display:flex;
+gap:2rem;
+padding:1rem
+}
+.dropdown {
+float:right;
+overflow:hidden
+}
+.dropdown .dropbtn {
+background-color:inherit;
+border:none;
+color:var(--text);
+font-family:inherit;
+font-size:16px;
+height:34px;
+margin:0;
+outline:none;
+width:40px
+}
+.navbar a:hover,.dropdown:hover .dropbtn {
+background-color:var(--highlight)
+}
+.dropdown-content {
+background-color:var(--bg);
+box-shadow:0 8px 16px 0 var(--border);
+display:none;
+position:absolute;
+right:6px;
+width:100px;
+z-index:1
+}
+.dropdown-content a {
+background-color:var(--bg-light);
+color:var(--text);
+display:block;
+float:left;
+padding-right:6px;
+text-align:right;
+text-decoration:none;
+width:100%
+}
+.dropdown-content a:hover {
+background-color:var(--highlight);
+border-width:1px
+}
+.dropdown:hover .dropdown-content {
+display:block
+}
+  </style>
 </head>
 <body>
   <div class="navbar">
-    <a href="/">Home</a>
+    <a href="../">Home</a>
+    <a class="active" href="about">This Station</a>
     <a href="gallery">Gallery</a>
-    <a class="active" href="about">About Project</a>
-    <a href="local/about">About Station</a>
+    <a href="does-not-exist">Data Archive</a>
     <div class="dropdown">
       <button class="dropbtn">☰</button>
       <div class="dropdown-content">
+       <a href="login">Log In</a>
+       <a href="logout">Log Out</a>
+       <a href="local/admin">Admin Panel</a>
        <a href="local/satdump">Satdump</a>
        <a href="local/stats">System</a>
-       <a href="login">Log In</a>
-       <a href="local/admin">Admin Panel</a>
       </div>
     </div>
   </div>
-  <div id="about">
-    Ongoing project for all things satellite RX related.
+  <div style="color: white;">
+  </div>
+  <div class="wrap">
+    <div class="grid">
+      <!-- Body -->
+      <article class="card md" id="body"></article>
 
-    Quick roadmap and some planned features:
-       Customized view showcasing most up-to-date global projection, recent posts from stations’ linked socials, recent RXes from stations (possibly filtered by coverage) Records of longest/highest quality pictures
-       Search by station name or location
-       Showcase of images/composites/group/custom image/etc. along with visualizations of the station stats (can be restricted by the station admin)
-       View information about each station, such as location, images of the station, hardware, software, and equipment used, any records this station holds, link to admin’s blog page & socials etc.
-       Page that will allow the owner of a station to customize the experience and content for those viewing their station’s page; as well as customizing how the service works on their device.
-       
-       Some new pages planned to be added are: Wiki, Blog, SatRX News, and maybe even a shop (or at least a database of links to verified posts of SatRX products)
-
-       <b>For suggestions, bug reports, or other inquiries please contact me at max@mothmaux.com</b>
+      <!-- Right column: hero image + metadata -->
+      <aside class="right">
+        <section class="hero" id="hero" aria-label="Highlighted image">
+          <div class="hero-img-wrap"><img id="heroImg" class="hero-img" alt="" /></div>
+          <div id="heroCap" class="hero-cap"></div>
+        </section>
+        <section class="meta" aria-label="Site metadata">
+          <h3>About This Site</h3>
+          <div class="meta-body" id="meta">
+            <!-- country, coords, socials populated by JS -->
+          </div>
+        </section>
+      </aside>
     </div>
+
+    <!-- Full gallery below -->
+    <section class="gallery" id="gallery"></section>
+  </div>
+
+  <script>
+  const API = { GET: 'api/about' };
+
+  function countryCodeToFlagEmoji(code){
+    if (!code) return '';
+    const cc = code.trim().toUpperCase();
+    if (cc.length !== 2) return '';
+    const base = 127397; // 0x1F1E6 - 'A'
+    return String.fromCodePoint(cc.charCodeAt(0)+base, cc.charCodeAt(1)+base);
+  }
+
+  async function getCountryName(cc){
+    try{
+      const res = await fetch(`https://restcountries.com/v3.1/alpha/${encodeURIComponent(cc)}?fields=name`);
+      if(!res.ok) return cc;
+      const js = await res.json();
+      return js?.name?.common || cc;
+    }catch{return cc}
+  }
+
+  function icon(name){
+    // Minimal inline SVGs to avoid external icon deps
+    const map = {
+      github:`<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.53 15.6c.4.07.55-.17.55-.38v-1.33c-2.25.49-2.72-1.08-2.72-1.08-.36-.92-.88-1.17-.88-1.17-.72-.5.05-.49.05-.49.8.06 1.22.83 1.22.83.71 1.22 1.86.86 2.31.66.07-.52.28-.86.51-1.06-1.79-.2-3.67-.9-3.67-3.98 0-.88.31-1.6.82-2.17-.08-.2-.36-1.01.08-2.12 0 0 .67-.22 2.2.83a7.6 7.6 0 0 1 4 0c1.53-1.05 2.2-.83 2.2-.83.44 1.11.16 1.92.08 2.12.51.57.82 1.29.82 2.17 0 3.09-1.88 3.78-3.67 3.98.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2z"/></svg>`,
+      twitter:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2H21.5l-7.51 8.58L22.5 22h-6.17l-4.82-5.64L5.9 22H2.64l7.99-9.14L2 2h6.25l4.37 5.02L18.24 2Zm-1.08 18h1.78L7.9 4H6.02l11.14 16Z"/></svg>`,
+      reddit:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.5a2.5 2.5 0 0 1-4.23 1.74c.03.26.05.53.05.8 0 2.95-3.35 5.34-7.49 5.34S2.84 18.99 2.84 16.04c0-.27.02-.54.05-.8A2.5 2.5 0 1 1 6.5 11a2.5 2.5 0 0 1 1.88.86 9.1 9.1 0 0 1 4.95-1.5c1.77 0 3.43.5 4.95 1.5A2.5 2.5 0 0 1 22 12.5ZM9.25 14a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Zm7.5 0A1.25 1.25 0 1 0 16.75 16.5 1.25 1.25 0 0 0 16.75 14ZM8.7 18.1c.9.74 2.44 1.23 4.13 1.23 1.68 0 3.22-.49 4.13-1.23a.75.75 0 0 0-.96-1.14c-.64.51-1.94.87-3.17.87-1.24 0-2.54-.36-3.18-.87a.75.75 0 1 0-.96 1.14Z"/></svg>`,
+      instagram:`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Zm0 2a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm5-2.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/></svg>`
+    };
+    return map[name]||'';
+  }
+
+  function normURL(kind, val){
+    if(!val) return '';
+    const v = String(val).trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    switch(kind){
+      case 'github': return `https://github.com/${v.replace(/^@/, '')}`;
+      case 'twitter': return `https://x.com/${v.replace(/^@/, '')}`;
+      case 'reddit': {
+        if (/^r\//i.test(v)) return `https://www.reddit.com/${v}`;
+        if (/^u\//i.test(v)) return `https://www.reddit.com/${v}`;
+        return `https://www.reddit.com/u/${v.replace(/^@/, '')}`;
+      }
+      case 'instagram': return `https://instagram.com/${v.replace(/^@/, '')}`;
+      default: return v;
+    }
+  }
+
+  function renderBody(md){
+    const raw = md || '';
+    const html = marked.parse(raw, {mangle:false, headerIds:false});
+    const safe = DOMPurify.sanitize(html);
+    document.getElementById('body').innerHTML = safe;
+  }
+
+  function renderHero(img){
+    const hero = document.getElementById('hero');
+    if(!img){ hero.style.display='none'; return; }
+    const el = document.getElementById('heroImg');
+    el.src = img.path; el.alt = img.caption || '';
+    document.getElementById('heroCap').textContent = img.caption || '';
+  }
+
+  function renderMeta(meta){
+    const root = document.getElementById('meta');
+    root.innerHTML = '';
+
+    const cc = meta.country || '';
+    const lat = meta.lat || '';
+    const lon = meta.lon || '';
+
+    const addKV = (k,v) => {
+      const row = document.createElement('div');
+      row.className = 'kv';
+      row.innerHTML = `<div style="color:var(--sub)">${k}</div><div>${v||'<span style="color:var(--sub)">—</span>'}</div>`;
+      root.appendChild(row);
+    };
+
+    // Country (flag + name)
+    if (cc){
+      const flag = `<span class="country-flag"><img src="https://flagsapi.com/${cc}/flat/32.png"></span>`;
+      addKV('Country', `${flag}<span id="countryName">${cc}</span>`);
+      getCountryName(cc).then(name=>{
+        const cn = document.getElementById('countryName'); if (cn) cn.textContent = name;
+      });
+    } else {
+      addKV('Country', '—');
+    }
+
+    // Coordinates
+    const fmt = (n)=> (n===null||n===undefined||n==='') ? '' : Number(n).toFixed(5);
+    addKV('Latitude',  fmt(lat));
+    addKV('Longitude', fmt(lon));
+
+    // Socials
+    const socials = ['github','twitter','reddit','instagram']
+      .map(k => ({k, v:(meta[k]||'').trim()}))
+      .filter(x => x.v);
+    if (socials.length){
+      const box = document.createElement('div');
+      box.className = 'socials';
+      socials.forEach(s => {
+        const a = normURL(s.k, s.v);
+        const row = document.createElement('div');
+        row.className='soc';
+        row.innerHTML = `${icon(s.k)} <a href="${a}" target="_blank" rel="noopener">${s.k}</a>`;
+        box.appendChild(row);
+      });
+      addKV('Social', box.outerHTML);
+    } else {
+      addKV('Social', '—');
+    }
+  }
+
+  function renderGallery(list){
+    const g = document.getElementById('gallery');
+    g.innerHTML = '';
+    list.forEach(img => {
+      const fig = document.createElement('figure');
+      fig.innerHTML = `<img loading="lazy" src="${img.path}" alt=""/><figcaption>${img.caption||''}</figcaption>`;
+      g.appendChild(fig);
+    });
+  }
+
+  async function load(){
+    const res = await fetch(API.GET, {credentials:'include'});
+    if(!res.ok){
+      document.getElementById('body').innerHTML = '<p style="color:#f8b4b4">Failed to load content.</p>';
+      return;
+    }
+    const data = await res.json();
+    renderBody(data.body);
+
+    const imgs = (data.images||[]).slice().sort((a,b)=> (a.sort??0)-(b.sort??0) || a.id-b.id);
+    renderHero(imgs[0]);
+    renderMeta(data.meta||{});
+    renderGallery(imgs);
+  }
+
+  load();
+  </script>
 </body>
 </html>

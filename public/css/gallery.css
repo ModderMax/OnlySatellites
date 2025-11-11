@@ -46,25 +46,15 @@ color:var(--text);
 float:left;
 font-size:17px;
 height:34px;
-overflow:hidden;
-padding:0;
-text-align:center;
+padding-left: .8em;
+text-align:left;
 text-decoration:none;
-width:20%
+width:30%
 }
 
 .navbar a.active {
 background-color:var(--bg-dark);
 color:var(--text-muted)
-}
-
-@media screen and (max-width: 500px) {
-.navbar a {
-display:block;
-float:none;
-text-align:left;
-width:100%
-}
 }
 
 .menu-dropdown {
@@ -414,8 +404,16 @@ margin-left:10px;
 text-decoration:none
 }
 
-.export-raw:hover {
-text-decoration:underline
+.sensor-block { margin: 0.5rem 0 1rem; }
+.sensor-title { font-weight: 600; margin: 0.5rem 0; }
+.sensor-images { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.export-zip {
+cursor:pointer;
+font-size:1.2em;
+font-weight:700;
+margin-left:10px;
+text-decoration:none
 }
 
 .pass-title {
@@ -498,4 +496,29 @@ border-radius:34px
 
 .slider.round:before {
 border-radius:50%
+}
+
+@media screen and (max-width: 525px) {
+.navbar a {
+float:none;
+text-align:left;
+width:50%
+}
+.navbar {
+    display: flex;
+}
+.image-card {
+    width: 125px;
+}
+.pass-title {
+    font-size: .8em;
+}
+.pass-actions {
+    gap: 0px;
+    font-size: 10px;
+}
+.arrow {
+    font-size: 2em;
+    padding-left: 5px;
+}
 }

@@ -1,1 +1,0 @@
-call npm install chart.js chartjs-plugin-streaming d3 archiver node-schedule appdata-path bcrypt sharp better-sqlite3 http-proxy-middleware systeminformation express express-session cheerio luxon chartjs-adapter-luxon ejs
