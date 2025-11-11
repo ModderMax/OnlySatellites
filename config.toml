@@ -12,7 +12,7 @@ cache_size = 10000
 
 [paths]
 data_dir = 'data'
-live_output_dir = 'C:\\Users\max\OneDrive\Desktop\OnlySatellites\live_output'
+live_output_dir = 'live_output'
 thumbnail_dir = ''
 log_dir = 'logs'
 
@@ -23,8 +23,4 @@ thumbnail_width = 200
 quality = 50
 
 [stationproxy]
-enabled = true
-station_name = 'luna'
-station_secret = 'KbP8lD9HgSQw0XOacdUN-gP4Mz'
-frps_addr = 'stations.onlysatellites.com'
-frps_port = 7000
+enabled = false

@@ -2,5 +2,6 @@ live_output/
 data/
 logs/
 frp_bin/
+tools/
 *.toml
 *.exe

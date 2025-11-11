@@ -746,6 +746,11 @@ func main() {
 		}
 	}()
 
+	if shared.IsAdmin() {
+		log.Print("Exiting...")
+		return
+	}
+
 	log.Println("Server starting, please wait...")
 	if err := app.runStartupTasks(); err != nil {
 		log.Printf("Startup warning: %v", err)
