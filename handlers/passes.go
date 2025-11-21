@@ -18,7 +18,6 @@ func NewTemplatesAdminAPI(prefs *com.LocalDataStore) *TemplatesAdminAPI {
 	return &TemplatesAdminAPI{Prefs: prefs}
 }
 
-// Register wires all routes
 func (h *TemplatesAdminAPI) Register(r *mux.Router, requireAuth func(level int, h http.Handler) http.Handler) {
 	r.UseEncodedPath()
 	// Namespace under /local/api
@@ -40,8 +39,6 @@ func (h *TemplatesAdminAPI) Register(r *mux.Router, requireAuth func(level int, 
 	s.Handle("/composites", requireAuth(1, http.HandlerFunc(h.UpsertComposite))).Methods("POST")
 	s.Handle("/composites/{key}", requireAuth(1, http.HandlerFunc(h.DeleteComposite))).Methods("DELETE")
 }
-
-// structures
 
 type (
 	passTypeDTO struct {
@@ -71,8 +68,6 @@ type (
 		Enabled *bool  `json:"enabled,omitempty"`
 	}
 )
-
-// Pass Types
 
 func (h *TemplatesAdminAPI) ListPassTypes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -122,8 +117,6 @@ func (h *TemplatesAdminAPI) DeletePassType(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, 200, map[string]string{"status": "ok"})
 }
 
-// Folder Includes
-
 func (h *TemplatesAdminAPI) ListFolderIncludes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rows, err := h.Prefs.ListFolderIncludes(ctx)
@@ -172,13 +165,14 @@ func (h *TemplatesAdminAPI) DeleteFolderInclude(w http.ResponseWriter, r *http.R
 	writeJSON(w, 200, map[string]string{"status": "ok"})
 }
 
-// Image Dir Rules
-
 func (h *TemplatesAdminAPI) ListImageDirRules(w http.ResponseWriter, r *http.Request) {
 	code := mux.Vars(r)["code"]
 	if code == "" {
 		badRequest(w, "code required")
 		return
+	}
+	if u, err := url.PathUnescape(code); err == nil {
+		code = u
 	}
 	rows, err := h.Prefs.ListImageDirRules(r.Context(), code)
 	if err != nil {
@@ -199,6 +193,9 @@ func (h *TemplatesAdminAPI) UpsertImageDirRule(w http.ResponseWriter, r *http.Re
 	if code == "" {
 		badRequest(w, "code required")
 		return
+	}
+	if u, err := url.PathUnescape(code); err == nil {
+		code = u
 	}
 	var in imageDirDTO
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -234,7 +231,6 @@ func (h *TemplatesAdminAPI) DeleteImageDirRule(w http.ResponseWriter, r *http.Re
 	writeJSON(w, 200, map[string]string{"status": "ok"})
 }
 
-// Composites
 func (h *TemplatesAdminAPI) ListComposites(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rows, err := h.Prefs.ListComposites(ctx)
@@ -244,7 +240,7 @@ func (h *TemplatesAdminAPI) ListComposites(w http.ResponseWriter, r *http.Reques
 	}
 	out := make([]compositeDTO, 0, len(rows))
 	for _, c := range rows {
-		en := c.Enabled // copy to local to take addr
+		en := c.Enabled
 		out = append(out, compositeDTO{Key: c.Key, Name: c.Name, Enabled: &en})
 	}
 	writeJSON(w, 200, out)
@@ -260,7 +256,6 @@ func (h *TemplatesAdminAPI) UpsertComposite(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "key and name required"})
 		return
 	}
-	// Default true if not provided (db-update ignores enabled anyway)
 	en := true
 	if in.Enabled != nil {
 		en = *in.Enabled

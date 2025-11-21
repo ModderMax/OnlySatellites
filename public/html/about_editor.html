@@ -157,14 +157,14 @@
 <script>
 // --- Config ---
 const API = {
-  GET_ALL: 'api/about',
-  PUT_BODY: 'local/api/about/body',
-  LIST_IMAGES: 'api/about/images',
-  UPLOAD_IMAGE: 'local/api/about/images/upload', // new upload endpoint (multipart)
-  UPDATE_IMAGE: (id) => `local/api/about/images/${id}`,
-  DELETE_IMAGE: (id) => `local/api/about/images/${id}`,
-  PUT_META: (key) => `local/api/about/meta/${encodeURIComponent(key)}`,
-  DELETE_META: (key) => `local/api/about/meta/${encodeURIComponent(key)}`,
+  GET_ALL: '../api/about',
+  PUT_BODY: 'api/about/body',
+  LIST_IMAGES: '../api/about/images',
+  UPLOAD_IMAGE: 'api/about/images/upload', // new upload endpoint (multipart)
+  UPDATE_IMAGE: (id) => `api/about/images/${id}`,
+  DELETE_IMAGE: (id) => `api/about/images/${id}`,
+  PUT_META: (key) => `api/about/meta/${encodeURIComponent(key)}`,
+  DELETE_META: (key) => `api/about/meta/${encodeURIComponent(key)}`,
 };
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const SOCIAL_OPTIONS = [
@@ -231,7 +231,6 @@ $('#btnSaveBody').addEventListener('click', async () => {
   }
 });
 
-// --- Countries (restcountries) ---
 async function loadCountries() {
   const sel = $('#countrySelect');
   sel.innerHTML = '<option value="">Loading…</option>';
@@ -248,13 +247,10 @@ async function loadCountries() {
 }
 
 function applyMeta(meta) {
-  // Country
   if (meta.country) $('#countrySelect').value = meta.country;
-  // Lat/Lon
   if (meta.lat != null) $('#latInput').value = meta.lat;
   if (meta.lon != null) $('#lonInput').value = meta.lon;
 
-  // Socials
   const socials = $('#socials');
   socials.innerHTML = '';
   for (const opt of SOCIAL_OPTIONS) {
@@ -283,15 +279,12 @@ $('#btnAddSocial').addEventListener('click', ()=> addSocialRow());
 
 $('#btnSaveMeta').addEventListener('click', async () => {
   const jobs = [];
-  // Country
   const country = $('#countrySelect').value.trim();
   jobs.push(saveMetaKey('country', country));
-  // Lat/Lon
   const lat = $('#latInput').value.trim();
   const lon = $('#lonInput').value.trim();
   jobs.push(saveMetaKey('lat', lat));
   jobs.push(saveMetaKey('lon', lon));
-  // Socials (dedupe by last occurrence wins)
   const rows = $$('.social-row');
   const latest = new Map();
   for (const row of rows) {
@@ -313,7 +306,6 @@ $('#btnSaveMeta').addEventListener('click', async () => {
 
 async function saveMetaKey(key, value) {
   if (value === '') {
-    // delete
     const res = await fetch(API.DELETE_META(key), { method: 'DELETE', credentials:'include' });
     if (!res.ok) throw new Error('delete meta failed: ' + key);
   } else {
@@ -326,7 +318,6 @@ async function saveMetaKey(key, value) {
   }
 }
 
-// --- Images ---
 function renderImages(list) {
   const root = $('#imageList');
   root.innerHTML = '';
