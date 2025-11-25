@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -177,4 +178,43 @@ func itoa(i int) string {
 		i /= 10
 	}
 	return string(a[n:])
+}
+
+func jsonToInt(v any) (int, error) {
+	switch t := v.(type) {
+	case bool:
+		if t {
+			return 1, nil
+		}
+		return 0, nil
+	case float64:
+		if t == 0 {
+			return 0, nil
+		}
+		if t == 1 {
+			return 1, nil
+		}
+		return 0, fmt.Errorf("log must be 0 or 1")
+	case string:
+		if t == "0" {
+			return 0, nil
+		}
+		if t == "1" {
+			return 1, nil
+		}
+		return 0, fmt.Errorf("log must be \"0\" or \"1\"")
+	default:
+		return 0, fmt.Errorf("log must be bool, number 0/1, or string \"0\"/\"1\"")
+	}
+}
+
+func parseInt64Default(s string, def int64) int64 {
+	if strings.TrimSpace(s) == "" {
+		return def
+	}
+	v, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return def
+	}
+	return v
 }

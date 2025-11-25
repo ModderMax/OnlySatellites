@@ -68,6 +68,7 @@ type Satdump struct {
 	Name    string `json:"name"`
 	Address string `json:"address"` // may be empty
 	Port    int    `json:"port"`    // 0 = unset
+	Logging int    `json:"log"`
 }
 
 type tblCol struct {
@@ -119,8 +120,11 @@ func OpenLocalData(cfg *config.AppConfig) (*LocalDataStore, error) {
 	}
 
 	lds := &LocalDataStore{db: db}
-	if err := lds.migrate(); err != nil {
+	if err := lds.migrateTables(); err != nil {
 		_ = lds.Close()
+		return nil, err
+	}
+	if err := lds.migrateColumns("satdump", "log", "log INTEGER"); err != nil {
 		return nil, err
 	}
 	return lds, nil
@@ -142,7 +146,51 @@ func (s *LocalDataStore) execDDL(stmts ...string) error {
 	return nil
 }
 
-func (s *LocalDataStore) migrate() error {
+func (s *LocalDataStore) columnExists(table, column string) (bool, error) {
+	rows, err := s.db.Query(`PRAGMA table_info(` + table + `);`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			cid       int
+			name      string
+			colType   string
+			notNull   int
+			dfltValue sql.NullString
+			pk        int
+		)
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func (s *LocalDataStore) migrateColumns(table, columnName, columnDef string) error {
+	exists, err := s.columnExists(table, columnName)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	alter := `ALTER TABLE ` + table + ` ADD COLUMN ` + columnDef + `;`
+	if _, err := s.db.Exec(alter); err != nil {
+		return fmt.Errorf("add column %s.%s: %w", table, columnName, err)
+	}
+	return nil
+}
+
+func (s *LocalDataStore) migrateTables() error {
 	return s.execDDL(
 		`CREATE TABLE IF NOT EXISTS admin_notes (
 			id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,7 +202,8 @@ func (s *LocalDataStore) migrate() error {
 		`CREATE TABLE IF NOT EXISTS satdump (
 			name    TEXT PRIMARY KEY,
 			address TEXT,     
-			port    INTEGER   
+			port    INTEGER,
+			log     INTEGER
 		);`,
 
 		`CREATE TABLE IF NOT EXISTS about_body (
@@ -627,27 +676,27 @@ func (s *LocalDataStore) UpdateAboutImage(ctx context.Context, id int64, path *s
 // ---------- Satdump (CRUD) ----------
 
 // insert a new row. Address may be empty; port may be 0.
-func (s *LocalDataStore) CreateSatdump(ctx context.Context, name, address string, port int) error {
+func (s *LocalDataStore) CreateSatdump(ctx context.Context, name, address string, port int, log int) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return errors.New("name required")
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO satdump (name, address, port) VALUES (?, ?, ?)
-	`, name, strings.TrimSpace(address), port)
+		INSERT INTO satdump (name, address, port, log) VALUES (?, ?, ?, ?)
+	`, name, strings.TrimSpace(address), port, log)
 	return err
 }
 
 // insert or updates by primary key (name).
-func (s *LocalDataStore) UpsertSatdump(ctx context.Context, name, address string, port int) error {
+func (s *LocalDataStore) UpsertSatdump(ctx context.Context, name, address string, port int, log int) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return errors.New("name required")
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO satdump (name, address, port) VALUES (?, ?, ?)
-		ON CONFLICT(name) DO UPDATE SET address=excluded.address, port=excluded.port
-	`, name, strings.TrimSpace(address), port)
+		INSERT INTO satdump (name, address, port, log) VALUES (?, ?, ?, ?)
+		ON CONFLICT(name) DO UPDATE SET address=excluded.address, port=excluded.port, log=excluded.log
+	`, name, strings.TrimSpace(address), port, log)
 	return err
 }
 
@@ -656,8 +705,8 @@ func (s *LocalDataStore) GetSatdump(ctx context.Context, name string) (*Satdump,
 	var row Satdump
 	var addr sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT name, address, port FROM satdump WHERE name=?
-	`, strings.TrimSpace(name)).Scan(&row.Name, &addr, &row.Port)
+		SELECT name, address, port, log FROM satdump WHERE name=?
+	`, strings.TrimSpace(name)).Scan(&row.Name, &addr, &row.Port, &row.Logging)
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +719,7 @@ func (s *LocalDataStore) GetSatdump(ctx context.Context, name string) (*Satdump,
 // return all hosts ordered by name.
 func (s *LocalDataStore) ListSatdump(ctx context.Context) ([]Satdump, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT name, address, port FROM satdump ORDER BY name
+		SELECT name, address, port, log FROM satdump ORDER BY name
 	`)
 	if err != nil {
 		return nil, err
@@ -681,7 +730,7 @@ func (s *LocalDataStore) ListSatdump(ctx context.Context) ([]Satdump, error) {
 	for rows.Next() {
 		var r Satdump
 		var addr sql.NullString
-		if err := rows.Scan(&r.Name, &addr, &r.Port); err != nil {
+		if err := rows.Scan(&r.Name, &addr, &r.Port, &r.Logging); err != nil {
 			return nil, err
 		}
 		if addr.Valid {
@@ -692,50 +741,59 @@ func (s *LocalDataStore) ListSatdump(ctx context.Context) ([]Satdump, error) {
 	return out, rows.Err()
 }
 
-// perform a partial update. Pass nil to leave a field unchanged.
-func (s *LocalDataStore) UpdateSatdump(ctx context.Context, name string, address *string, port *int) error {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return errors.New("name required")
-	}
+func (s *LocalDataStore) UpdateSatdump(
+	ctx context.Context,
+	oldName, newName string,
+	addrPtr *string,
+	portPtr *int,
+	logPtr *int,
+) error {
 
-	type part struct {
-		sql string
-		arg any
-	}
-	set := []part{}
-
-	if address != nil {
-		// Allow setting to empty string explicitly.
-		set = append(set, part{sql: "address = ?", arg: strings.TrimSpace(*address)})
-	}
-	if port != nil {
-		set = append(set, part{sql: "port = ?", arg: *port})
-	}
-	if len(set) == 0 {
-		return errors.New("no fields to update")
-	}
-
-	q := "UPDATE satdump SET "
-	args := make([]any, 0, len(set)+1)
-	for i, p := range set {
-		if i > 0 {
-			q += ", "
-		}
-		q += p.sql
-		args = append(args, p.arg)
-	}
-	q += " WHERE name = ?"
-	args = append(args, name)
-
-	res, err := s.db.ExecContext(ctx, q, args...)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return sql.ErrNoRows
+	defer tx.Rollback()
+
+	row := tx.QueryRowContext(ctx, `SELECT name FROM satdump WHERE name=?`, oldName)
+	var existing string
+	if err := row.Scan(&existing); err != nil {
+		return err
 	}
-	return nil
+
+	setParts := []string{"name = ?"}
+	args := []any{newName}
+
+	if addrPtr != nil {
+		setParts = append(setParts, "address = ?")
+		args = append(args, *addrPtr)
+	}
+	if portPtr != nil {
+		setParts = append(setParts, "port = ?")
+		args = append(args, *portPtr)
+	}
+	if logPtr != nil {
+		setParts = append(setParts, "log = ?")
+		args = append(args, *logPtr)
+	}
+
+	args = append(args, oldName)
+
+	q := fmt.Sprintf(`UPDATE satdump SET %s WHERE name=?`, strings.Join(setParts, ", "))
+	if _, err := tx.ExecContext(ctx, q, args...); err != nil {
+		return err
+	}
+
+	if newName != oldName && s.db != nil {
+		if _, err := s.db.ExecContext(ctx,
+			`UPDATE satdump_readings SET instance=? WHERE instance=?`,
+			newName, oldName,
+		); err != nil {
+			return fmt.Errorf("failed to update logs for rename: %w", err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *LocalDataStore) DeleteSatdump(ctx context.Context, name string) error {
@@ -749,6 +807,27 @@ func (s *LocalDataStore) DeleteSatdump(ctx context.Context, name string) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (s *LocalDataStore) ListSatdumpLoggingEnabled(ctx context.Context) ([]Satdump, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT name, address, port, log FROM satdump WHERE IFNULL(log,0) != 0 ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Satdump
+	for rows.Next() {
+		var r Satdump
+		var addr sql.NullString
+		if err := rows.Scan(&r.Name, &addr, &r.Port, &r.Logging); err != nil {
+			return nil, err
+		}
+		if addr.Valid {
+			r.Address = addr.String
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
 }
 
 // ---------- Color Codes (CSS variables) ----------

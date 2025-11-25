@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Telemetry Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="css/data.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar" class="open">
+      <div class="sidebar-header">
+        <h2>Menu</h2>
+      </div>
+      <nav>
+        <button class="nav-btn" data-view="polar">Polar Plot</button>
+        <button class="nav-btn" data-view="geo">GEO SNR</button>
+        <div class="divider"></div>
+      </nav>
+      <div class="small">
+      </div>
+    </aside>
+
+    <main id="content">
+      <!-- Polar plot view -->
+      <section id="polarView" class="view active">
+        <div class="card">
+          <h3>SatDump Polar Plot</h3>
+          <div class="row">
+            <label for="satNameSel">Satellite</label>
+            <select id="satNameSel"></select>
+
+            <label for="polarFrom">From</label>
+            <input id="polarFrom" type="datetime-local">
+
+            <label for="polarTo">To</label>
+            <input id="polarTo" type="datetime-local">
+
+            <button id="genSatBtn">Generate</button>
+          </div>
+          <div class="small">
+            Colors: <b>black=0</b>, <span style="color:#f44">red=low</span>, <span style="color:#6f6">green=high</span> SNR.
+          </div>
+          <div class="chart">
+            <h4 id="satChartTitle">—</h4>
+            <canvas id="satChart" style="width:100%; height:360px;"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- GEO SNR view -->
+      <section id="geoView" class="view">
+        <div class="card">
+          <h3>GEO Decoder Metrics</h3>
+          <div class="row">
+            <label for="geoDecoder">Decoder key</label>
+            <input id="geoDecoder" type="text" placeholder="ccsds_conv_concat_decoder">
+            <label for="geoFrom">From</label>
+            <input id="geoFrom" type="datetime-local">
+            <label for="geoTo">To</label>
+            <input id="geoTo" type="datetime-local">
+            <button id="genGeoBtn">Generate</button>
+            <div class="geo-switch-container">
+              <span class="small">Metric:</span>
+              <label class="geo-switch">
+              <input type="checkbox" id="geoMetricSwitch">
+              <span class="slider"></span>
+              <span class="switch-label-left">SNR</span>
+              <span class="switch-label-right">BER</span>
+            </label>
+            </div>
+          </div>
+          <div class="chart">
+            <h4 id="geoChartTitle">—</h4>
+            <canvas id="geoChart" style="width:100%; height:260px;"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+</body>
+</html>

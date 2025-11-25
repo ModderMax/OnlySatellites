@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -28,27 +27,27 @@ type Satdump struct {
 	Name    string `json:"name"`
 	Address string `json:"address"`
 	Port    int    `json:"port"`
+	Logging int    `json:"log"`
 }
 
 type SatdumpHandler struct {
-	Store *com.LocalDataStore
+	Store  *com.LocalDataStore
+	AnalDB *sql.DB
 }
 
 type Store interface {
 	ListSatdump(ctx context.Context) ([]Satdump, error)
 	GetSatdump(ctx context.Context, name string) (*Satdump, error)
-	CreateSatdump(ctx context.Context, name, address string, port int) error
-	UpdateSatdump(ctx context.Context, name string, address *string, port *int) error
+	CreateSatdump(ctx context.Context, name, address string, port int, log int) error
+	UpdateSatdump(ctx context.Context, oldName string, newName string, address *string, port *int, log *int) error
 	DeleteSatdump(ctx context.Context, name string) error
 }
 
 func SatdumpIndex(tmpl *template.Template, hostIP string, port int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// short, safe client
 		client := &http.Client{Timeout: 5 * time.Second}
 		base := "http://" + hostIP + ":" + itoa(port)
 
-		// fetch /status and /api in parallel with a small context timeout
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
 
@@ -149,7 +148,6 @@ func SatdumpHTML(hostIP string, port int) http.HandlerFunc {
 	}
 }
 
-// Satdump backend settings
 func (a *SatdumpHandler) List(w http.ResponseWriter, r *http.Request) {
 	rows, err := a.Store.ListSatdump(r.Context())
 	if err != nil {
@@ -185,7 +183,6 @@ func (a *SatdumpHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	in.Name = strings.TrimSpace(in.Name)
 	in.Address = strings.TrimSpace(in.Address)
-
 	if in.Name == "" {
 		badRequest(w, "name is required")
 		return
@@ -194,8 +191,11 @@ func (a *SatdumpHandler) Create(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, "port must be 0..65535")
 		return
 	}
+	if in.Logging != 0 {
+		in.Logging = 1
+	}
 
-	if err := a.Store.CreateSatdump(r.Context(), in.Name, in.Address, in.Port); err != nil {
+	if err := a.Store.CreateSatdump(r.Context(), in.Name, in.Address, in.Port, in.Logging); err != nil {
 		serverErr(w, err)
 		return
 	}
@@ -203,8 +203,8 @@ func (a *SatdumpHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *SatdumpHandler) Update(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimSpace(mux.Vars(r)["name"])
-	if name == "" {
+	oldName := strings.TrimSpace(mux.Vars(r)["name"])
+	if oldName == "" {
 		badRequest(w, "missing name")
 		return
 	}
@@ -215,12 +215,29 @@ func (a *SatdumpHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rawName, ok := in["name"]
+	if !ok {
+		badRequest(w, `"name" field required`)
+		return
+	}
+	newName, ok := rawName.(string)
+	if !ok {
+		badRequest(w, `"name" must be string`)
+		return
+	}
+	newName = strings.TrimSpace(newName)
+	if newName == "" {
+		badRequest(w, "name cannot be empty")
+		return
+	}
+
 	var addrPtr *string
 	var portPtr *int
+	var logPtr *int
 
 	if v, ok := in["address"]; ok {
 		if s, ok := v.(string); ok {
-			tmp := strings.TrimSpace(s) // allow empty
+			tmp := strings.TrimSpace(s)
 			addrPtr = &tmp
 		} else {
 			badRequest(w, "address must be string")
@@ -228,33 +245,23 @@ func (a *SatdumpHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if v, ok := in["port"]; ok {
-		switch t := v.(type) {
-		case float64:
-			pi := int(t)
-			if pi < 0 || pi > 65535 {
-				badRequest(w, "port must be 0..65535")
-				return
-			}
-			portPtr = &pi
-		case string:
-			pi, err := strconv.Atoi(t)
-			if err != nil || pi < 0 || pi > 65535 {
-				badRequest(w, "port must be 0..65535")
-				return
-			}
-			portPtr = &pi
-		default:
-			badRequest(w, "port must be number or string")
+		pi, err := jsonToInt(v)
+		if err != nil || pi < 0 || pi > 65535 {
+			badRequest(w, "port must be 0..65535")
 			return
 		}
+		portPtr = &pi
+	}
+	if v, ok := in["log"]; ok {
+		lv, err := jsonToInt(v)
+		if err != nil {
+			badRequest(w, err.Error())
+			return
+		}
+		logPtr = &lv
 	}
 
-	if addrPtr == nil && portPtr == nil {
-		badRequest(w, "no fields to update")
-		return
-	}
-
-	if err := a.Store.UpdateSatdump(r.Context(), name, addrPtr, portPtr); err != nil {
+	if err := a.Store.UpdateSatdump(r.Context(), oldName, newName, addrPtr, portPtr, logPtr); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			notFound(w, "satdump not found")
 			return
@@ -263,10 +270,9 @@ func (a *SatdumpHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := a.Store.GetSatdump(r.Context(), name)
+	row, err := a.Store.GetSatdump(r.Context(), newName)
 	if err != nil {
-		// fallback: just confirm update
-		writeJSON(w, http.StatusOK, map[string]string{"updated": name})
+		writeJSON(w, http.StatusOK, map[string]string{"updated": newName})
 		return
 	}
 	writeJSON(w, http.StatusOK, row)
@@ -287,4 +293,46 @@ func (a *SatdumpHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Public APIs (data page)
+
+func (h *SatdumpHandler) Names(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	out := com.GetSatdumpActive(r.Context(), h.AnalDB)
+	_ = json.NewEncoder(w).Encode(out)
+}
+
+func (h *SatdumpHandler) PolarPlot(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+	if name == "" {
+		badRequest(w, "name required")
+		return
+	}
+	from := parseInt64Default(r.URL.Query().Get("from"), time.Now().Add(-6*time.Hour).Unix())
+	to := parseInt64Default(r.URL.Query().Get("to"), time.Now().Unix())
+
+	points, err := com.TracksSNR(r.Context(), h.AnalDB, name, from, to)
+	if err != nil {
+		serverErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, points)
+}
+
+func (h *SatdumpHandler) GEOProgress(w http.ResponseWriter, r *http.Request) {
+	decoder := strings.TrimSpace(r.URL.Query().Get("decoder"))
+	if decoder == "" {
+		badRequest(w, "decoder required")
+		return
+	}
+	from := parseInt64Default(r.URL.Query().Get("from"), time.Now().Add(-6*time.Hour).Unix())
+	to := parseInt64Default(r.URL.Query().Get("to"), time.Now().Unix())
+
+	points, err := com.DecoderSNRStats(r.Context(), h.AnalDB, decoder, from, to)
+	if err != nil {
+		serverErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, points)
 }

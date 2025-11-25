@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -35,6 +36,7 @@ type Application struct {
 	config       *config.AppConfig
 	passConfig   *config.PassConfig
 	db           *shared.Database
+	anal         *sql.DB
 	localStore   *com.LocalDataStore
 	sessionStore *sessions.CookieStore
 	tempAdmin    *com.EphemeralAdmin
@@ -88,14 +90,14 @@ func (app *Application) loadConfig() error {
 }
 
 func (app *Application) initializeStores() error {
-	// Init local data store
+	// Init local data store (toml)
 	var err error
 	app.localStore, err = com.OpenLocalData(app.config)
 	if err != nil {
 		return fmt.Errorf("local data init: %w", err)
 	}
 
-	// Init database
+	// Init sqlite3 for image meta and settings
 	dbCfg, err := shared.NewConfigFromAppConfig(app.config)
 	if err != nil {
 		return fmt.Errorf("database config: %w", err)
@@ -110,6 +112,14 @@ func (app *Application) initializeStores() error {
 	keys, err := com.LoadOrGenerateSessionKeys(app.config.Paths.DataDir)
 	if err != nil {
 		return fmt.Errorf("session key init: %w", err)
+	}
+
+	app.anal, err = shared.OpenAnalDB(app.config.Paths.DataDir)
+	if err != nil {
+		return fmt.Errorf("analytics db open: %w", err)
+	}
+	if err := shared.InitSchema(app.anal); err != nil {
+		return fmt.Errorf("analytics schema: %w", err)
 	}
 
 	secure := true
@@ -174,6 +184,7 @@ func (app *Application) setupPublicRoutes(r *mux.Router) {
 
 	r.HandleFunc("/", app.serveEmbeddedHTML("index.html", htmlFS))
 	r.HandleFunc("/about", app.serveEmbeddedHTML("about.html", htmlFS))
+	r.HandleFunc("/data", app.serveEmbeddedHTML("data.html", htmlFS))
 	r.HandleFunc("/login", app.loginPage(htmlFS)).Methods("GET")
 	r.HandleFunc("/login", app.handleLogin).Methods("POST")
 	r.HandleFunc("/logout", app.handleLogout).Methods("GET")
@@ -208,8 +219,6 @@ func (app *Application) setupGalleryRoutes(r *mux.Router) {
 
 	// Gallery page
 	r.HandleFunc("/gallery", galleryHandler).Methods("GET")
-
-	log.Println("Live output directory:", app.config.Paths.LiveOutputDir)
 }
 
 func (app *Application) setupImageRoutes(r *mux.Router) {
@@ -347,7 +356,6 @@ func (app *Application) setupSatdumpRoutes(r *mux.Router) {
 		http.Redirect(w, r, "/local/satdump/"+url.PathEscape(name), http.StatusFound) // 302
 	}))).Methods("GET")
 
-	// Cookie-scoped helpers — must be ABOVE the {name} route
 	r.Handle("/local/satdump/live", app.requireAuth(3, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ip, port, ok := resolveFromCookieOrFirst(w, r); ok {
 			handlers.SatdumpLive(ip, port).ServeHTTP(w, r)
@@ -364,7 +372,7 @@ func (app *Application) setupSatdumpRoutes(r *mux.Router) {
 		http.Error(w, "No SatDump instances configured", http.StatusNotFound)
 	}))).Methods("GET")
 
-	// match /local/satdump/Name
+	// match name
 	r.Handle("/local/satdump/{name:[^/.]+}", app.requireAuth(3, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := mux.Vars(r)["name"]
 		if u, err := url.PathUnescape(name); err == nil {
@@ -406,7 +414,7 @@ func (app *Application) setupSatdumpRoutes(r *mux.Router) {
 		}
 	}))).Methods("GET")
 
-	// Catch-all asset proxy
+	// asset proxy
 	r.PathPrefix("/local/satdump/").Handler(app.requireAuth(3, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ip, port, ok := resolveFromCookieOrFirst(w, r); ok {
 			r2 := r.Clone(r.Context())
@@ -419,6 +427,11 @@ func (app *Application) setupSatdumpRoutes(r *mux.Router) {
 		}
 		http.Error(w, "No SatDump instances configured", http.StatusNotFound)
 	})))
+
+	ah := &handlers.SatdumpHandler{Store: app.localStore, AnalDB: app.anal}
+	r.Handle("/api/satdump/names", http.HandlerFunc(ah.Names)).Methods("GET")
+	r.Handle("/api/analytics/tracks", http.HandlerFunc(ah.PolarPlot)).Methods("GET")
+	r.Handle("/api/analytics/decoder", http.HandlerFunc(ah.GEOProgress)).Methods("GET")
 }
 
 func (app *Application) setupUpdateRoutes(r *mux.Router) {
@@ -675,7 +688,7 @@ func (app *Application) initializeAuthDB() error {
 	}
 	app.tempAdmin = ep
 
-	// If the ephemeral admin is enabled (i.e., no level<=1 users),
+	// If the ephemeral admin is enabled
 	// ep.Try(...) will return ok=true when given the generated password.
 	if ep != nil {
 		if _, ok := ep.Try(ctx, app.localStore, "admin", ep.Password); ok {
@@ -701,37 +714,6 @@ func (app *Application) handleStats(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to encode stats: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-}
-
-// Background tasks
-func (app *Application) startScheduledTasks() {
-	go func() {
-		ticker := time.NewTicker(24 * time.Hour)
-		defer ticker.Stop()
-
-		for {
-			now := time.Now()
-			nextRun := time.Date(now.Year(), now.Month(), now.Day()+1, 3, 0, 0, 0, now.Location())
-			if now.Hour() >= 3 {
-				nextRun = nextRun.Add(24 * time.Hour)
-			}
-
-			select {
-			case <-time.After(nextRun.Sub(now)):
-				if err := app.runBackup(); err != nil {
-					log.Printf("Backup failed: %v", err)
-				}
-			case <-ticker.C:
-				// Fallback ticker to prevent goroutine from hanging
-			}
-		}
-	}()
-}
-
-func (app *Application) runBackup() error {
-	log.Println("Running scheduled backup...")
-	// not implemented yet
-	return nil
 }
 
 // Main function
@@ -763,7 +745,7 @@ func main() {
 	}
 
 	router := app.createRouter()
-	app.startScheduledTasks()
+	go com.RunScheduledTasks(app.config)
 
 	// start server with proper timeouts
 	srv := &http.Server{

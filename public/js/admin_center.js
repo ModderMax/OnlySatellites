@@ -5,42 +5,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     'danger','highlight','info','primary','secondary',
     'success','text','text-muted','warning'
   ];
-  const $ = (sel, root=document) => root.querySelector(sel);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-  // Supported encodings
-  const ENCODINGS = ['hex', 'rgb', 'hsl', 'oklch'];
+const ENCODINGS = ['hex', 'rgb', 'hsl', 'oklch'];
 
-  // DOM nodes
-  const modal = document.getElementById('themeModal');
-  const openBtn = document.getElementById('openThemeBtn');
-  const closeBtn = document.getElementById('themeCloseBtn');
-  const cancelBtn = document.getElementById('themeCancelBtn');
-  const saveBtn = document.getElementById('themeSaveBtn');
-  const addRowBtn = document.getElementById('addThemeRowBtn');
-  const rows = document.getElementById('themeRows');
-  const msg = document.getElementById('themeMsg');
-  //composites
-  const cmodal = $('#composites-modal');
-  const tbody = $('#composites-table tbody');
-  const cmsg = $('#comp-msg');
-  const btnOpen = $('#btn-open-composites');
-  const btnAdd = $('#btn-add-composite');
-  const btnSave = $('#btn-save-composites');
-  //users
+const modal = document.getElementById('themeModal');
+const openBtn = document.getElementById('openThemeBtn');
+const closeBtn = document.getElementById('themeCloseBtn');
+const cancelBtn = document.getElementById('themeCancelBtn');
+const saveBtn = document.getElementById('themeSaveBtn');
+const addRowBtn = document.getElementById('addThemeRowBtn');
+const rows = document.getElementById('themeRows');
+const msg = document.getElementById('themeMsg');
+const cmodal = $('#composites-modal');
+const tbody = $('#composites-table tbody');
+const cmsg = $('#comp-msg');
+const btnOpen = $('#btn-open-composites');
+const btnAdd = $('#btn-add-composite');
+const btnSave = $('#btn-save-composites');
 const umodal      = document.getElementById('users-modal');
 const uOpenBtn    = document.getElementById('btn-open-users');
 const uTbody      = document.querySelector('#users-table tbody');
 const uMsg        = document.getElementById('users-msg');
 const uBtnAdd     = document.getElementById('btn-add-user');
 const uBtnSave    = document.getElementById('btn-save-users');
-// Rate limiting inputs
 const updateCdInput   = document.getElementById('update-cd');
 const passLimitInput  = document.getElementById('pass-limit');
 const satRateInput    = document.getElementById('satdump-rate');
 const satSpanInput    = document.getElementById('satdump-span');
 
-  // ---- Helpers: color conversions ----
   function hexToRgb(hex) {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!m) return null;
@@ -64,16 +58,13 @@ const satSpanInput    = document.getElementById('satdump-span');
     return {h: Math.round(h*360), s: Math.round(s*100), l: Math.round(l*100)};
   }
 
-  // sRGB -> linear
   const srgbToLinear = c => {
     c /= 255;
     return (c <= 0.04045) ? c/12.92 : Math.pow((c + 0.055)/1.055, 2.4);
   };
-  // linear sRGB -> OKLab -> OKLCH
   function rgbToOKLCH(r8,g8,b8){
     const r = srgbToLinear(r8), g = srgbToLinear(g8), b = srgbToLinear(b8);
 
-    // linear sRGB to LMS (via OKLab paper)
     const l = 0.4122214708*r + 0.5363325363*g + 0.0514459929*b;
     const m = 0.2119034982*r + 0.6806995451*g + 0.1073969566*b;
     const s = 0.0883024619*r + 0.2817188376*g + 0.6299787005*b;
@@ -101,10 +92,9 @@ const satSpanInput    = document.getElementById('satdump-span');
     }
     if (enc === 'oklch') {
       const {L,C,H} = rgbToOKLCH(rgb.r, rgb.g, rgb.b);
-      // Round to sane precision
-      const l = (Math.round(L*1000)/1000).toFixed(3);      // 0..1
-      const c = (Math.round(C*1000)/1000).toFixed(3);      // ~0..0.4 typical
-      const h = Math.round(H);                             // degrees
+      const l = (Math.round(L*1000)/1000).toFixed(3);
+      const c = (Math.round(C*1000)/1000).toFixed(3);
+      const h = Math.round(H);
       return `oklch(${l} ${c} ${h})`;
     }
     return hex.toLowerCase();
@@ -152,10 +142,8 @@ const satSpanInput    = document.getElementById('satdump-span');
     delBtn.title = 'Remove';
     delBtn.textContent = '−';
 
-    // compute initial value
     valInput.value = initial.value || formatValue(encSel.value, colorInput.value);
 
-    // wire interactions
     colorInput.addEventListener('input', () => {
       valInput.value = formatValue(encSel.value, colorInput.value);
     });
@@ -172,13 +160,12 @@ const satSpanInput    = document.getElementById('satdump-span');
     rows.appendChild(row);
   }
 
-  // ---- Modal plumbing ----
   function openThemePopup() {
     msg.textContent = '';
     msg.className = 'theme-msg';
     modal.setAttribute('aria-hidden', 'false');
     if (!rows.children.length) {
-      addThemeRow(); // at least one
+      addThemeRow();
     }
     const firstInput = rows.querySelector('select, input');
     if (firstInput) firstInput.focus();
@@ -190,9 +177,7 @@ const satSpanInput    = document.getElementById('satdump-span');
   }
   function escToClose(e) { if (e.key === 'Escape') closeThemePopup(); }
 
-  // ---- Submit to API ----
   async function submitTheme() {
-    // gather rows; later row with same var overrides earlier
     const payload = {};
     for (const row of rows.querySelectorAll('.theme-row')) {
       const varName = row.querySelector('select')?.value;
@@ -240,17 +225,18 @@ const satSpanInput    = document.getElementById('satdump-span');
   const saveSettingsBtn    = document.getElementById('settings-save');
   const statusEl   = document.getElementById('settings-status');
 
-  // --- Satdump instances UI helpers ---
-function makeInstanceRow(name = '', address = '', port = '', isNew = true) {
+function makeInstanceRow(name = '', address = '', port = '', log = '', isNew = true) {
   const row = document.createElement('div');
   row.className = 'row';
   row.dataset.new = isNew ? '1' : '0';
-  row.dataset.orig = name; // used to detect renames/deletes
+  row.dataset.orig = name;
+  const logChecked = (String(log) === '1' || log === 1 || log === true);
 
   row.innerHTML = `
-    <input type="text"  class="sd-name"    placeholder="Name (e.g., APT Station)" value="${escapeHtml(name)}" aria-label="Satdump name">
-    <input type="text"  class="sd-address" placeholder="Address (blank = local)"  value="${escapeHtml(address)}" aria-label="Satdump address">
-    <input type="number" class="sd-port"   placeholder="Port (e.g., 8081)"        value="${escapeHtml(port)}" min="0" max="65535" step="1" aria-label="Satdump port">
+    <input type="text"   class="sd-name"    placeholder="Name (e.g., APT Station)" value="${escapeHtml(name)}"   aria-label="Satdump name">
+    <input type="text"   class="sd-address" placeholder="Address (blank = local)"  value="${escapeHtml(address)}" aria-label="Satdump address">
+    <input type="number" class="sd-port"    placeholder="Port (e.g., 8081)"        value="${escapeHtml(port)}"   min="0" max="65535" step="1" aria-label="Satdump port">
+    <input type="checkbox" class="sd-log" ${logChecked ? 'checked' : ''} aria-label="Enable logging">
     <button type="button" class="remove" title="Remove">×</button>
   `;
   row.querySelector('.remove').addEventListener('click', () => row.remove());
@@ -260,6 +246,8 @@ function makeInstanceRow(name = '', address = '', port = '', isNew = true) {
   function clearInstanceRows() {
     rowsEl.innerHTML = '';
   }
+
+  function boolToInt(b){ return b ? 1 : 0; }
 
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -280,7 +268,6 @@ function makeInstanceRow(name = '', address = '', port = '', isNew = true) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const settings = await res.json(); 
 
-      // Hardware monitor
       if (typeof settings['hwmonitor'] === 'string') {
         const v = settings['hwmonitor'].toLowerCase();
         if (['off', 'hwinfo', 'native'].includes(v)) {
@@ -288,7 +275,6 @@ function makeInstanceRow(name = '', address = '', port = '', isNew = true) {
         }
       }
 
-      // Archiving
       const active = (settings['archive.active'] === '1');
       archToggle.checked = active;
 
@@ -302,8 +288,6 @@ function makeInstanceRow(name = '', address = '', port = '', isNew = true) {
         }
       }
       updateArchiveVisibility();
-
-      // Delete passes (always present)
       if (settings['archive.clean'] != null) {
         const clean = parseInt(settings['archive.clean'], 10);
         if (!isNaN(clean) && clean >= 0) cleanDays.value = String(clean);
@@ -339,21 +323,18 @@ async function loadSatdumpList() {
   try {
     const res = await fetch('/local/api/satdump', { credentials: 'include' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const list = await res.json(); // [{name, address, port}, ...]
+    const list = await res.json();
     if (Array.isArray(list) && list.length) {
-      // Stable sort by name
       list.sort((a,b)=> String(a.name).localeCompare(String(b.name)));
       for (const sd of list) {
-        makeInstanceRow(sd.name || '', sd.address || '', String(sd.port ?? '0'), /*isNew*/false);
+        makeInstanceRow(sd.name || '', sd.address || '', String(sd.port ?? '0'), sd.log || '0', /*isNew*/false);
         if (sd.name) satdumpOriginalNames.add(sd.name);
       }
     } else {
-      // no rows — show one blank row to guide
       makeInstanceRow();
     }
   } catch (e) {
     console.error('Failed to load satdump list:', e);
-    // still show one row so user can add
     makeInstanceRow();
   }
 }
@@ -362,15 +343,8 @@ function clearInstanceRows() {
   rowsEl.innerHTML = '';
 }
 
-  // --- Build payload and POST ---
   async function saveSettings() {
     const payload = {};
-    rowsEl.querySelectorAll('.row').forEach(row => {
-      const name = row.querySelector('.sd-name').value.trim();
-      const port = row.querySelector('.sd-port').value.trim();
-      if (!name || !port) return;
-      payload[`satdump.${name}`] = port;
-    });
 
     payload['hwmonitor'] = hwSelect.value;
 
@@ -387,19 +361,19 @@ function clearInstanceRows() {
 
     {
   const v = parseInt(updateCdInput.value || '0', 10);
-  if (!isNaN(v) && v >= 0) payload['update_cd'] = String(v); // seconds
+  if (!isNaN(v) && v >= 0) payload['update_cd'] = String(v);
 }
 {
   const v = parseInt(passLimitInput.value || '0', 10);
-  if (!isNaN(v) && v >= 0) payload['pass_limit'] = String(v); // whole number
+  if (!isNaN(v) && v >= 0) payload['pass_limit'] = String(v);
 }
 {
   const v = parseInt(satRateInput.value || '0', 10);
-  if (!isNaN(v) && v >= 0) payload['satdump_rate'] = String(v); // ms
+  if (!isNaN(v) && v >= 0) payload['satdump_rate'] = String(v);
 }
 {
   const v = parseInt(satSpanInput.value || '0', 10);
-  if (!isNaN(v) && v >= 0) payload['satdump_span'] = String(v); // seconds
+  if (!isNaN(v) && v >= 0) payload['satdump_span'] = String(v);
 }
 
     statusEl.textContent = 'Saving…';
@@ -464,7 +438,7 @@ function clearInstanceRows() {
       const list = await res.json();
       list.forEach(c => caddRow({
         key: c.key, name: c.name, enabled: c.enabled === true || c.enabled === 1
-      }, /*isNew*/false));
+      }, false));
     } catch (e) {
       toastErr(e.message);
     }
@@ -512,7 +486,6 @@ function clearInstanceRows() {
       toastErr(e.message);
     }
   }
-
   async function csaveAll() {
     clearMsg();
     btnSave.disabled = true;
@@ -554,7 +527,6 @@ function clearInstanceRows() {
       btnSave.disabled = false;
     }
   }
-
   async function uopenModal() {
   uclearMsg();
   umodal.classList.remove('hidden');
@@ -567,7 +539,6 @@ function ucloseModal() {
 umodal.addEventListener('click', (e) => { if (e.target.dataset.uclose) ucloseModal(); });
 uOpenBtn?.addEventListener('click', uopenModal);
 
-// Build a row (existing or new)
 function uaddRow(u = { id:null, username:'', level:5 }, isNew = true) {
   const tr = document.createElement('tr');
   tr.dataset.new = isNew ? '1' : '0';
@@ -653,7 +624,6 @@ async function uloadUsers() {
     const res = await fetch('/local/api/users', { credentials:'include' });
     if (!res.ok) throw new Error('Failed to fetch users');
     const list = await res.json();
-    // list like: [{id, username, level}]
     if (list != null)
     {
       list.forEach(u => uaddRow({ id:u.id, username:u.username, level: u.level }, false));
@@ -667,7 +637,6 @@ async function usaveAll() {
   uclearMsg();
   uBtnSave.disabled = true;
   try {
-    // Validate + upsert all rows
     const rows = Array.from(uTbody.querySelectorAll('tr'));
     for (const tr of rows) {
       const isNew   = tr.dataset.new === '1';
@@ -691,14 +660,11 @@ async function usaveAll() {
         });
         const data = await res.json().catch(()=> ({}));
         if (!res.ok) throw new Error(data.error || `Create failed for "${user}"`);
-        // lock it as existing
         tr.dataset.new = '0';
         tr.dataset.id  = data.id;
         tr.querySelector('.u-del').disabled = false;
-        pwField.value = ''; // clear
+        pwField.value = '';
       } else {
-        // update username if changed
-        // (we’ll PUT both username and level every save to keep logic simple)
         {
           const res = await fetch(`/local/api/users/${id}/username`, {
             method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include',
@@ -713,7 +679,6 @@ async function usaveAll() {
           });
           if (!res.ok) throw new Error(`Update level failed for id=${id}`);
         }
-        // If a password was typed, do a reset in the same Save pass
         if (pw) {
           const res = await fetch(`/local/api/users/${id}/reset-password`, {
             method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
@@ -738,17 +703,16 @@ async function saveSatdump() {
   statusEl.textContent = 'Saving Satdump…';
 
   try {
-    // Build current view
     const rows = Array.from(rowsEl.querySelectorAll('.row'));
     const current = rows.map(r => {
-      const name = r.querySelector('.sd-name').value.trim();
-      const address = r.querySelector('.sd-address').value.trim(); // may be ""
+      const name    = r.querySelector('.sd-name').value.trim();
+      const address = r.querySelector('.sd-address').value.trim();
       const portStr = r.querySelector('.sd-port').value.trim();
-      const port = portStr === '' ? 0 : Math.max(0, Math.min(65535, parseInt(portStr, 10) || 0));
-      return { el: r, name, address, port, isNew: r.dataset.new === '1', orig: r.dataset.orig || '' };
+      const port    = portStr === '' ? 0 : Math.max(0, Math.min(65535, parseInt(portStr, 10) || 0));
+      const log     = boolToInt(r.querySelector('.sd-log').checked);
+      return { el: r, name, address, port, log, isNew: r.dataset.new === '1', orig: r.dataset.orig || '' };
     });
 
-    // Basic validation: name required
     for (const c of current) {
       if (!c.name) throw new Error('Each Satdump row needs a non-empty name.');
       if (Number.isNaN(c.port) || c.port < 0 || c.port > 65535) {
@@ -756,26 +720,21 @@ async function saveSatdump() {
       }
     }
 
-    // 1) Upserts (Create new, PUT existing — we treat rename as delete+create)
     for (const c of current) {
       const isRename = c.orig && c.orig !== c.name;
       if (c.isNew || isRename || !satdumpOriginalNames.has(c.name)) {
-        // Try POST create; if 409 or duplicate, you could switch to PUT flow.
         const res = await fetch('/local/api/satdump', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           credentials: 'include',
-          body: JSON.stringify({ name: c.name, address: c.address, port: c.port })
+          body: JSON.stringify({ name: c.name, address: c.address, port: c.port, log: c.log })
         });
         if (!res.ok) {
           const txt = await res.text().catch(()=> '');
           throw new Error(`Create failed for "${c.name}": ${txt || res.status}`);
         }
       } else {
-        // Existing by name → PUT partial update (idempotent)
-        const body = {};
-        body.address = c.address; // allow empty string to persist empty
-        body.port = c.port;
+        const body = { name: c.name, address: c.address, port: c.port, log: c.log };
         const res = await fetch('/local/api/satdump/' + encodeURIComponent(c.name), {
           method: 'PUT',
           headers: {'Content-Type':'application/json'},
@@ -789,7 +748,6 @@ async function saveSatdump() {
       }
     }
 
-    // 2) Deletes: anything originally present but not in current names
     const currentNames = new Set(current.map(c => c.name));
     const toDelete = Array.from(satdumpOriginalNames).filter(n => !currentNames.has(n));
     for (const name of toDelete) {
@@ -803,7 +761,6 @@ async function saveSatdump() {
       }
     }
 
-    // Reload fresh to lock all rows as existing
     await loadSatdumpList();
     statusEl.textContent = 'Satdump saved';
     setTimeout(()=>{ statusEl.textContent=''; }, 1200);
@@ -818,7 +775,7 @@ async function saveSatdump() {
 addBtn?.addEventListener('click', () => makeInstanceRow());
 saveSatdumpBtn?.addEventListener('click', saveSatdump);
 
-uBtnAdd?.addEventListener('click', () => uaddRow());   // blank new row
+uBtnAdd?.addEventListener('click', () => uaddRow());
 uBtnSave?.addEventListener('click', usaveAll);
 
   saveSettingsBtn.addEventListener('click', saveSettings);
@@ -826,7 +783,6 @@ uBtnSave?.addEventListener('click', usaveAll);
   updateArchiveVisibility();
   prefillSettings();
 
-  // Wire controls
   openBtn?.addEventListener('click', openThemePopup);
   closeBtn?.addEventListener('click', closeThemePopup);
   cancelBtn?.addEventListener('click', closeThemePopup);
@@ -857,7 +813,6 @@ uBtnSave?.addEventListener('click', usaveAll);
   }
 });
 
-  // Expose if handy elsewhere
   window.openThemePopup = openThemePopup;
 
   if (!statsDiv) return;

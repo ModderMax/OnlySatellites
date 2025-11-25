@@ -1,0 +1,56 @@
+:root {
+  --bg:#0f1115; --fg:#e8ebf0; --muted:#a7afc0; --card:#161a22; --accent:#7aa2f7; --ok:#85e89d; --warn:#ffd47e;
+  --border:#252a34;
+}
+body { margin:0; font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--fg); }
+#app { display:flex; min-height:100vh; }
+aside { width:130px; background:#0b0d12; border-right:1px solid var(--border); transition: width .2s ease; overflow:hidden; }
+.sidebar-header { display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid var(--border); }
+.sidebar-header h2 { margin:0; font-size:16px; }
+#toggleSidebar { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 6px; cursor:pointer; }
+nav { display:flex; flex-direction:column; gap:8px; padding:12px; }
+.nav-btn { text-align:left; padding:8px 10px; border:1px solid var(--border); background:var(--card); color:var(--fg); border-radius:10px; cursor:pointer; }
+.nav-btn:hover { border-color:var(--accent); }
+.divider { height:1px; background:var(--border); margin:12px 0; }
+.small { font-size:12px; color:var(--muted); padding:0 12px 12px; }
+main { flex:1; }
+header { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border); }
+h1 { margin:0; font-size:20px; }
+@media screen and (max-width: 500px) { #app { display:block;} #sidebar { width:100%;}}
+.view { display:none; padding:20px; }
+.view.active { display:block; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:20px; }
+.row { gap:10px; align-items:center; margin:10px 0; }
+label { color:var(--muted); }
+input, select, button { padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:#0c1016; color:var(--fg); }
+button { background:#111725; cursor:pointer; }
+button:hover { border-color:var(--accent); }
+table { width:100%; border-collapse:collapse; }
+th, td { border-bottom:1px solid var(--border); padding:8px; text-align:left; }
+th { color:var(--muted); font-weight:600; }
+#snapshot .pill { display:inline-block; padding:6px 10px; margin:4px; border:1px solid var(--border); border-radius:999px; background:#121722; }
+.alias { color:var(--muted); font-size:12px; margin-left:6px; }
+.value { font-variant-numeric: tabular-nums; }
+dialog { border:none; border-radius:12px; padding:20px; background:var(--card); color:var(--fg); }
+menu { display:flex; gap:10px; justify-content:flex-end; padding:0; margin-top:12px; }
+.chart { border:1px solid var(--border); border-radius:10px; padding:10px; margin:16px 0; background:#0c1016; }
+.chart h4 { margin:6px 0 10px; color:var(--muted); font-weight:600; }
+.chart canvas { width:100%; height:300px; display:block; }
+.legend { font-size:12px; color:var(--muted); margin-bottom:6px; }
+.legend span { margin-right:10px; }
+#satdumpView .chart { margin-top: 10px; }
+#satChart { aspect-ratio: 1 / 1; }
+.geo-switch-container { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.geo-switch { position: relative; width: 70px; height: 26px; display: inline-block; }
+.geo-switch input { display: none; }
+.geo-switch .slider { position: absolute; cursor: pointer; background: #2b3345; border-radius: 14px; top: 0; left: 0;
+  right: 0; bottom: 0; transition: 0.3s background; border: 1px solid #445; }
+.geo-switch .slider:before { content: ""; position: absolute; height: 20px; width: 32px; left: 2px; bottom: 2px;
+  background: #7ab0ff; transition: 0.3s transform; border-radius: 12px; }
+.geo-switch input:checked + .slider:before { transform: translateX(32px); }
+.geo-switch .switch-label-left,
+.geo-switch .switch-label-right { position: absolute; font-size: 11px; top: 50%; transform: translateY(-50%); color: #d0d4e0; pointer-events: none; }
+.geo-switch .switch-label-left { left: 8px; }
+.geo-switch .switch-label-right { right: 8px; opacity: 0.6; }
+.geo-switch input:checked ~ .switch-label-left { opacity: 0.6; }
+.geo-switch input:checked ~ .switch-label-right { opacity: 1; }
