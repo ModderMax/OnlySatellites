@@ -459,7 +459,7 @@ function drawPolar(canvas, points){
   ctx.strokeStyle = '#445'; ctx.strokeRect(0, 18, 14, 10);
   ctx.fillStyle = '#a7afc0'; ctx.fillText('NoSync', 20, 26);
 
-  canvas._polarState = { plotted, cx, cy, R, minS, maxS };
+  canvas._polarState = { plotted, cx, cy, R, minS, maxS, points };
 
   const TIP_BG = 'rgba(20,24,32,0.95)';
   const thresh = 10;
@@ -470,11 +470,19 @@ function drawPolar(canvas, points){
     if (a >= 10)  return v.toFixed(2);
     return v.toFixed(3);
   }
+
+  // 🔧 Changed: don't close over `points` anymore
   function redrawHover(pt){
-    drawPolar(canvas, points);
+    const state = canvas._polarState || {};
+    const pts = state.points || [];
+    // re-draw with whatever the latest points are
+    drawPolar(canvas, pts);
     if (!pt) return;
+
+    const { x, y } = pt;
+
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI*2); ctx.fill();
 
     const lines = [
       `Az: ${formatNum(pt.az)}°`,
@@ -485,9 +493,9 @@ function drawPolar(canvas, points){
     const padding = 8;
     const tw = Math.max(...lines.map(t => ctx.measureText(t).width)) + padding*2;
     const th = (lines.length*14) + padding*2;
-    let tx = pt.x + 12, ty = pt.y - th - 12;
-    if (tx + tw > W - 6) tx = pt.x - tw - 12;
-    if (ty < 6)          ty = pt.y + 12;
+    let tx = x + 12, ty = y - th - 12;
+    if (tx + tw > W - 6) tx = x - tw - 12;
+    if (ty < 6)          ty = y + 12;
 
     ctx.fillStyle = TIP_BG;
     ctx.strokeStyle = '#445';
@@ -503,9 +511,10 @@ function drawPolar(canvas, points){
     canvas.addEventListener('mousemove', (e)=>{
       const r = canvas.getBoundingClientRect();
       const mx = e.clientX - r.left, my = e.clientY - r.top;
-      const { plotted } = canvas._polarState || { plotted: [] };
+      const state = canvas._polarState || {};
+      const plottedNow = state.plotted || [];
       let best=null, bestD=Infinity;
-      for (const p of plotted) {
+      for (const p of plottedNow) {
         const d = Math.hypot(p.x - mx, p.y - my);
         if (d < bestD) { bestD = d; best = p; }
       }

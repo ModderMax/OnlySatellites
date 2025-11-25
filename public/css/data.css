@@ -12,7 +12,7 @@ nav { display:flex; flex-direction:column; gap:8px; padding:12px; }
 .nav-btn { text-align:left; padding:8px 10px; border:1px solid var(--border); background:var(--card); color:var(--fg); border-radius:10px; cursor:pointer; }
 .nav-btn:hover { border-color:var(--accent); }
 .divider { height:1px; background:var(--border); margin:12px 0; }
-.small { font-size:12px; color:var(--muted); padding:0 12px 12px; }
+.small { font-size:12px; color:var(--muted); }
 main { flex:1; }
 header { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border); }
 h1 { margin:0; font-size:20px; }
@@ -40,8 +40,8 @@ menu { display:flex; gap:10px; justify-content:flex-end; padding:0; margin-top:1
 .legend span { margin-right:10px; }
 #satdumpView .chart { margin-top: 10px; }
 #satChart { aspect-ratio: 1 / 1; }
-.geo-switch-container { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.geo-switch { position: relative; width: 70px; height: 26px; display: inline-block; }
+.geo-switch-container { margin-left: auto; align-items: center; gap: 8px; display:inline-block;}
+.geo-switch { position: relative; width: 70px; height: 26px; display: inline-block; top:8px;}
 .geo-switch input { display: none; }
 .geo-switch .slider { position: absolute; cursor: pointer; background: #2b3345; border-radius: 14px; top: 0; left: 0;
   right: 0; bottom: 0; transition: 0.3s background; border: 1px solid #445; }
