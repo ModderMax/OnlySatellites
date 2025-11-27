@@ -127,6 +127,9 @@ func OpenLocalData(cfg *config.AppConfig) (*LocalDataStore, error) {
 	if err := lds.migrateColumns("satdump", "log", "log INTEGER"); err != nil {
 		return nil, err
 	}
+	if _, err := lds.db.Exec(`UPDATE satdump SET log = 0 WHERE log IS NULL`); err != nil {
+		return nil, fmt.Errorf("backfill satdump.log: %w", err)
+	}
 	return lds, nil
 }
 
@@ -705,7 +708,12 @@ func (s *LocalDataStore) GetSatdump(ctx context.Context, name string) (*Satdump,
 	var row Satdump
 	var addr sql.NullString
 	err := s.db.QueryRowContext(ctx, `
-		SELECT name, address, port, log FROM satdump WHERE name=?
+		SELECT name,
+		       address,
+		       port,
+		       IFNULL(log, 0) AS log
+		FROM satdump
+		WHERE name = ?
 	`, strings.TrimSpace(name)).Scan(&row.Name, &addr, &row.Port, &row.Logging)
 	if err != nil {
 		return nil, err
@@ -719,7 +727,12 @@ func (s *LocalDataStore) GetSatdump(ctx context.Context, name string) (*Satdump,
 // return all hosts ordered by name.
 func (s *LocalDataStore) ListSatdump(ctx context.Context) ([]Satdump, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT name, address, port, log FROM satdump ORDER BY name
+		SELECT name,
+		       address,
+		       port,
+		       IFNULL(log, 0) AS log
+		FROM satdump
+		ORDER BY name
 	`)
 	if err != nil {
 		return nil, err
@@ -734,7 +747,7 @@ func (s *LocalDataStore) ListSatdump(ctx context.Context) ([]Satdump, error) {
 			return nil, err
 		}
 		if addr.Valid {
-			r.Address = addr.String // may still be empty string, which is fine
+			r.Address = addr.String
 		}
 		out = append(out, r)
 	}
@@ -1068,8 +1081,35 @@ SELECT id, code, dataset_file, rawdata_file, downlink FROM pass_types ORDER BY c
 }
 
 func (s *LocalDataStore) DeletePassType(ctx context.Context, code string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM pass_types WHERE code=?`, strings.TrimSpace(code))
-	return err
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return errors.New("code required")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var id int64
+	if err := tx.QueryRowContext(ctx, `SELECT id FROM pass_types WHERE code=?`, code).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM image_dir_rules WHERE pass_type_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM folder_includes WHERE pass_type_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM pass_types WHERE id=?`, id); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ---------- Image Dir Rules (CRUD) ----------
@@ -1144,11 +1184,18 @@ ORDER BY dir_name`, ptID)
 func (s *LocalDataStore) DeleteImageDirRule(ctx context.Context, passTypeCode, dirName string) error {
 	ptID, err := s.getPassTypeIDByCode(ctx, passTypeCode)
 	if err != nil {
-		return fmt.Errorf("pass type not found: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
 	}
 	_, err = s.db.ExecContext(ctx, `
-DELETE FROM image_dir_rules WHERE pass_type_id=? AND dir_name=?`, ptID, dirName)
-	return err
+DELETE FROM image_dir_rules WHERE pass_type_id=? AND dir_name=?`,
+		ptID, dirName)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // ---------- Folder Includes (CRUD) ----------

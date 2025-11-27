@@ -218,6 +218,9 @@ func (h *TemplatesAdminAPI) DeleteImageDirRule(w http.ResponseWriter, r *http.Re
 		badRequest(w, "code required")
 		return
 	}
+	if u, err := url.PathUnescape(code); err == nil {
+		code = u
+	}
 	if dir == "__ROOT__" {
 		dir = ""
 	}
