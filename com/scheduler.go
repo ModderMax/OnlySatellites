@@ -195,6 +195,9 @@ func RunScheduledTasks(appCfg *config.AppConfig) {
 		return
 	}
 	for _, s := range rows {
+		if s.Address == "" {
+			s.Address = shared.GetHostIPv4()
+		}
 		endpoint := buildSatdumpEndpoint(s.Address, s.Port)
 		go satdumpPoller(ctx, logCh, s.Name, endpoint, every)
 	}

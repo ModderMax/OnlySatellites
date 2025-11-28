@@ -988,7 +988,36 @@ func (s *LocalDataStore) GetComposite(ctx context.Context, key string) (*Composi
 }
 
 func (s *LocalDataStore) ListComposites(ctx context.Context) ([]Composite, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT key, label, enabled FROM composites ORDER BY key`)
+	const q = `
+WITH all_composites AS (
+    SELECT
+        c.key   AS key,
+        c.label AS label,
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM image_dir_rules r
+                WHERE r.composite = c.key
+            ) THEN 1
+            ELSE c.enabled
+        END AS enabled
+    FROM composites c
+
+    UNION
+
+    SELECT
+        r.composite AS key,
+        r.composite AS label, -- or use some other default label logic if you prefer
+        1 AS enabled
+    FROM image_dir_rules r
+    LEFT JOIN composites c ON c.key = r.composite
+    WHERE c.key IS NULL
+)
+SELECT key, label, enabled
+FROM all_composites
+ORDER BY key;
+`
+	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}

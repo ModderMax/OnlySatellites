@@ -181,30 +181,27 @@ func itoa(i int) string {
 }
 
 func jsonToInt(v any) (int, error) {
-	switch t := v.(type) {
-	case bool:
-		if t {
-			return 1, nil
-		}
-		return 0, nil
+	switch n := v.(type) {
 	case float64:
-		if t == 0 {
-			return 0, nil
-		}
-		if t == 1 {
-			return 1, nil
-		}
-		return 0, fmt.Errorf("log must be 0 or 1")
+		return int(n), nil
+	case int:
+		return n, nil
+	case int64:
+		return int(n), nil
 	case string:
-		if t == "0" {
+		s := strings.TrimSpace(n)
+		if s == "" {
 			return 0, nil
 		}
-		if t == "1" {
-			return 1, nil
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, err
 		}
-		return 0, fmt.Errorf("log must be \"0\" or \"1\"")
+		return i, nil
+	case nil:
+		return 0, nil
 	default:
-		return 0, fmt.Errorf("log must be bool, number 0/1, or string \"0\"/\"1\"")
+		return 0, fmt.Errorf("invalid number type %T", v)
 	}
 }
 
