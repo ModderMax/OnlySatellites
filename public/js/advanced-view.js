@@ -21,8 +21,8 @@ document.getElementById('sortByPass')?.addEventListener('change', () => {
   updateCountLimit();
   loadImages();
 });
-document.getElementById('satelliteFilter')?.addEventListener('change', updateCompositeOptions);
-document.getElementById('satelliteFilter')?.addEventListener('change', loadImages);
+//document.getElementById('satelliteFilter')?.addEventListener('change', updateCompositeOptions);
+//document.getElementById('satelliteFilter')?.addEventListener('change', loadImages);
 document.getElementById('bandFilter')?.addEventListener('change', loadImages);
 document.getElementById('correctedOnly')?.addEventListener('change', loadImages);
 document.getElementById('showUnfilled')?.addEventListener('change', loadImages);
@@ -167,6 +167,7 @@ async function fetchOptions() {
 
   satSelect.addEventListener('change', async () => {
     await updateCompositeOptions(satSelect.value);
+    await loadImages();
   });
 
   await updateCompositeOptions('');

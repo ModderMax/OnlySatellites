@@ -19,9 +19,6 @@ import (
 
 func buildSatdumpEndpoint(addr string, port int) string {
 	addr = strings.TrimSpace(addr)
-	if addr == "" {
-		addr = "127.0.0.1"
-	}
 	if port <= 0 {
 		return fmt.Sprintf("http://%s/api", addr)
 	}

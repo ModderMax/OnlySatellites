@@ -5,6 +5,7 @@
   <title>OnlySats Gallery</title>
   <link rel="icon" href="/img/OnlySats_Logo.svg" type="image/x-icon">
   <link rel="stylesheet" href="css/gallery.css">
+  <link rel="stylesheet" href="colors.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
   </style>
@@ -42,12 +43,8 @@
   {{end}}
 
   <script>
-    // Injected initial state
     const isSimplified = {{if .Simplified}}true{{else}}false{{end}};
-    // This is already JSON (safe), so we output without quotes
     const initialData = {{.InitialDataJS}};
-
-    // Toggle behavior — mirrors your original logic
     document.getElementById('simplifiedMode').addEventListener('change', function() {
       const newMode = this.checked ? 'simple' : 'advanced';
       window.location.href = `gallery?mode=${newMode}`;

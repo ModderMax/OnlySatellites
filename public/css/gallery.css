@@ -84,7 +84,7 @@ box-shadow:0 8px 16px 0 #0003;
 color:var(--text-muted);
 display:none;
 position:absolute;
-right:6px;
+right:20px;
 width:100px;
 z-index:1
 }
